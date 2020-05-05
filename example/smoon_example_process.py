@@ -29,8 +29,6 @@ much easier. A loop could be written or select using file_path like below.
 file_list = smoon.getlistoffiles(nld['defaultdir'] + "/data/crns_data/raw/")
 file_path = file_list[0]
 
-
-
 ############################### Tidy Up #######################################
 """
 tidyup function takes file_path and provides the "tidy" dataframe, country, sitenum
@@ -43,19 +41,22 @@ raw data it will use era5_land data (see era5_land example).
 
 df, country, sitenum, meta = smoon.tidyup(file_path)
 
-
 ############################# Neutron Coefficients ############################
 """
 Takes tidy data, creates neutron correction factors for pressure, humidity, 
 solar intensity and aboveground biomass. Saves the dataframe and outputs df and metadata. 
 """
 # Output the new df plus updated meta
-df, meta = smoon.neutcoeffs(df, country, sitenum)
 
+df, meta = smoon.neutcoeffs(df, country, sitenum)
 
 ############################ N0 Calibration ################################
 """
-N0 calibration script. Output is the meta_data with the updated N0 value.
+N0 calibration script. Output is the meta_data with the updated N0 value and N0.
+
+The inputs are the meta data file, country and sitenum to identify the site of interest,
+the accuracy to aim for and a boolean for whether to overwrite the metadata csv file with
+the new n0. This is to allow testing of N0 without changing the csv file.
 """
 
 meta, N0 = smoon.n0_calib(meta, country, sitenum, nld['accuracy'], write=True)
@@ -64,20 +65,15 @@ meta, N0 = smoon.n0_calib(meta, country, sitenum, nld['accuracy'], write=True)
 #                          Quality Analysis                                   #
 ###############################################################################
 """
-Take in tidy data and country/sitenum, give out updated df and meta.
 
-Need to save here into LVL1.txt file. N0 recalib will use this file to give new
-N0. This then allows flagging of values to be removed. It will then be updated.
+
+
 """
 
 # flag and remove the datapoints that get flagged
 df = smoon.flag_and_remove(df, N0)
 
 df = smoon.QA_plotting(df, country, sitenum, nld['defaultdir'])
-
-# Save Lvl1 data as now the quality control has been done on it
-df.to_csv(nld['defaultdir'] + "/data/crns_data/level1/"+country+"_SITE_" + sitenum+"_LVL1.txt",
-          header=True, index=False, sep="\t", mode='w')
 
 
 ###############################################################################

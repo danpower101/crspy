@@ -36,6 +36,7 @@ import smoon
 
 def neutcoeffs(df, country, sitenum):    
     
+    print ("~~~~~~~~~~~~~ Calculate Neutron Correction Factors ~~~~~~~~~~~~~")
     # Read in meta fresh
     meta = pd.read_csv(nld['defaultdir']+"/data/meta_data.csv")
     meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Add leading zeros
@@ -100,14 +101,11 @@ def neutcoeffs(df, country, sitenum):
     #                        Corrected Neutrons                                   #
     ###############################################################################
     """
-    Need to create the MODCORR which is corrected neutrons. Will also create
-    additional CORR vals - one for calibration (all corrections minus agb)
-                        - one for all except fawv
-                        - one for all except fsolGV
-                        - one for all except fbar
+    Need to create the MODCORR which is corrected neutrons. 
     """
     df['MODCORR'] = df['MOD'] * df['fbar'] * df['fsolGV'] * df['fawv'] * df['fagb']  
     df['MODCORR'] = df['MODCORR'].apply(np.floor)
+    
     df['CALIBCORR'] = df['MOD'] * df['fbar'] * df['fsolGV'] * df['fawv']
     df['CALIBCORR'] = df['CALIBCORR'].apply(np.floor)
     
@@ -127,5 +125,5 @@ def neutcoeffs(df, country, sitenum):
     # Save Lvl1 data
     df.to_csv(nld['defaultdir'] + "/data/crns_data/level1/"+country+"_SITE_" + sitenum+"_LVL1.txt",
           header=True, index=False, sep="\t",  mode='w')
-    
+    print ("Done")
     return df, meta

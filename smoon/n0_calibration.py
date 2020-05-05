@@ -134,6 +134,8 @@ def rscaled (r, p, Hveg, y) :
 
 def n0_calib(meta, country, sitenum, defineaccuracy, write):
     
+    
+    print("~~~~~~~~~~~~~ N0 Calibration ~~~~~~~~~~~~~" )
         # Bulk Density (bd), Site Name, Soil Organic Carbon (soc) and lattice water (lw) taken from meta data
     bd = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'BD'].item() #Here using average of BD given in calibration data
     bdunavailable = False

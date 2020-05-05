@@ -44,6 +44,7 @@ def tidyup(fileloc):
     Read in meta_data. Format DateTime. Check for external vars. If not availble
     use ERA5-Land data (additional module to obtain this)
     """
+    print("~~~~~~~~~~~~~ Start TidyUp ~~~~~~~~~~~~~")
     ###############################################################################
     #                        Import Data and                                      #
     #                       organise time and date                                #
@@ -84,6 +85,8 @@ def tidyup(fileloc):
     ###############################################################################
     #                        Beta Coefficient                                     #
     ###############################################################################
+    print("Calculate Beta Coeff...")
+    
     avgp = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "MEAN_PRESS"].item()
     elev = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "ELEV"].item()
     lat = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "LATITUDE"].item()
@@ -92,6 +95,7 @@ def tidyup(fileloc):
     meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'BETA_COEFF'] = abs(beta)
     meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'REFERENCE_PRESS'] = refpress
     meta.to_csv(nld['defaultdir']+"/data/meta_data.csv", header=True, index=False, mode="w") #write to csv
+    print("Done")
     ###############################################################################
     #                        The Master Time                                      #
     ###############################################################################
@@ -105,7 +109,7 @@ def tidyup(fileloc):
     every half hour instead of every hour, for example. The best way to address this 
     currently is to retain the first instance of the duplicate and discard the second.
     """
-
+    print("Master Time process...")
     df['DT'] = df.DT.dt.floor(freq = 'H')
     df = df.set_index(df.DT)
     df['dupes'] = df.duplicated(subset="DT")
@@ -117,13 +121,14 @@ def tidyup(fileloc):
     idx = pd.date_range(df.DATE.iloc[0], df.DATE.iloc[-1], freq='1H', closed='left')
     df = df.reindex(idx, fill_value=nld['noval'])
     df['DT'] = df.index
-    
+    print("Done")
     ###############################################################################
     #                         ERA-5 variables                                     #
     ###############################################################################    
     """
     Read in netcdfs in a loop - attaching data for each variable to df. 
     """
+    print("Collecting ERA-5 Land variables...")
     era5 = xr.open_dataset(nld['defaultdir']+"data/era5land/"+nld['era5_filename']+".nc") #
     era5site = era5.sel(site=sitecode)
     era5time = pd.to_datetime(era5site.time.values)
@@ -158,12 +163,13 @@ def tidyup(fileloc):
 
     df['VP'] = df.apply(lambda row: smoon.dew2vap(row['DEWPOINT_TEMP']), axis=1) # VP is in kPA
     df['VP'] = df['VP']*1000 # Convert to Pascals
+    print("Done")
     ###############################################################################
     #                            The Final Table                                  #
     #                                                                             #
     # Add function that checks to see if column is all -999 - if so drop column   #
     ###############################################################################
-    
+    print("Writing out table...")
     # REMINDER - remove 2019 dates as no DAYMET data
     
     df = df.reindex( columns = ['DT','MOD','UNMOD','PRESS','I_TEM','I_RH','E_TEM',
@@ -183,5 +189,5 @@ def tidyup(fileloc):
 	# Save Tidy data
     df.to_csv(nld['defaultdir'] + "/data/crns_data/tidy/"+country+"_SITE_" + sitenum+"_TIDY.txt", 
           header=True, index=False, sep="\t",  mode='w')
-    
+    print("Done")
     return df, country, sitenum, meta

@@ -11,6 +11,8 @@ import pandas as pd
 import numpy as np
 import os
 
+
+df = pd.read_csv(nld['defaultdir']+"data/crns_data/level1/USA_SITE_011_LVL1.txt", sep="\t")
 ###############################################################################
 #                          The flagging                                       #
 ###############################################################################
@@ -23,17 +25,27 @@ def flag_and_remove(df, N0):
         2 = fast neutron counts less than the minimum count rate (default == 30%, can be set in namelist)
         3 = fast neutron counts more than n0
         4 = battery below 10v
+        5 = no count for MOD
+        
     """
-    df['TMP_INDEX'] = range(0, len(df['MOD']))
-    df2 = df
+    print("~~~~~~~~~~~~~ Flagging and Removing ~~~~~~~~~~~~~")
+    print("Identifying erroneous data...")
+    idx = df['DT']
+    idx = pd.to_datetime(idx)
+    #idx = pd.date_range(idx[0], idx[-1], freq='1H', closed='left')
+
+    df2 = df.copy()
     df2['FLAG'] = 0 # initialise FLAG to 0
     
     df2.loc[df2.MOD > N0, "FLAG"] = 3 # Flag consistent with COSMOS-USA system
     df = df.drop(df[df.MOD > N0].index)   # drop above N0
     
-    df2.loc[df2.MOD < (N0*(nld['belowN0']/100)), "FLAG"] = 2
+    df2.loc[(df2.MOD < (N0*(nld['belowN0']/100))) & (df2.MOD != nld['noval']), "FLAG"] = 2
     df = df.drop(df[df.MOD < (N0*(nld['belowN0']/100))].index) # drop below 0.3 N0
     df = df.reset_index(drop=True)
+    
+    df2.loc[(df2.BATT < 10) & (df2.BATT != nld['noval']), "FLAG"] = 4
+    df = df.drop(df[df.BATT < 10].index)
     
     # Drop >20% diff in timestep
     moddiff=[0]
@@ -57,14 +69,30 @@ def flag_and_remove(df, N0):
     diff2 = np.where(df.PRCNTDIFF < (-nld['timestepdiff']))
     diff2 = diff2[0]
     
-    df2['FLAG'][diff1] = 1
-    df2['FLAG'][diff2] = 1
-    df2 = df2.drop('TMP_INDEX', axis = 1)
+    df2.loc[diff1, "FLAG"] = 1
+    df2.loc[diff2, "FLAG"] = 1    
+
     
     df = df.drop(df[df.PRCNTDIFF > nld['timestepdiff']].index)
     df = df.drop(df[df.PRCNTDIFF < (-nld['timestepdiff'])].index)
-    df = df.reset_index(drop=True)
-        
+    #df = df.reset_index(drop=True)
+    
+    # Fill in master time again after removing
+    df.replace(-999, np.nan, inplace=True) # Need this to handle below code
+    df['DT'] = pd.to_datetime(df['DT'], format="%Y-%m-%d %H:%M:%S")
+    df = df.set_index(df.DT)
+    df = df.reindex(idx, fill_value=nld['noval'])
+    df['DT'] = pd.to_datetime(df['DT'])
+    df.loc[df.MOD == nld['noval'], :] = nld['noval']
+    flagseries = df2['FLAG']
+    df['FLAG'] = flagseries.values # Place flag vals back into df
+    df['DT'] = df.index
+    
+    df=df.drop(["DIFF","PRCNTDIFF"], axis =1)
+    
+    df.to_csv(nld['defaultdir'] + "/data/crns_data/level1/"+country+"_SITE_" + sitenum+"_LVL1.txt",
+          header=True, index=False, sep="\t", mode='w')
+    print("Done")
     return df
 
 ###############################################################################
@@ -87,7 +115,8 @@ def tseriesplots(var, df, defaultdir, country, sitenum):
 
 def QA_plotting(df, country, sitenum, defaultdir):
     
-    
+    print("~~~~~~~~~~~~~ Plotting QA Graphs ~~~~~~~~~~~~~")
+    print("Saving plots...")
     df['YEAR'] = df['DT'].dt.year
     df['MONTH'] = df['DT'].dt.month
     df['DAY'] = df['DT'].dt.day
@@ -152,6 +181,7 @@ def QA_plotting(df, country, sitenum, defaultdir):
     # Plot I_RH
     tseriesplots("I_RH", df, defaultdir, country, sitenum)
     
-    df = df.drop(['YEAR', 'MONTH', 'DAY', 'DIFF', 'PRCNTDIFF'], axis=1)
+    df = df.drop(['YEAR', 'MONTH', 'DAY', 'DIFF', 'PRCNTDIFF', "CALIBCORR"], axis=1)
     df = df.replace(np.nan, nld['noval'])
+    print("Done")
     return df
