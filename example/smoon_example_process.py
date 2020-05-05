@@ -43,28 +43,22 @@ raw data it will use era5_land data (see era5_land example).
 
 df, country, sitenum, meta = smoon.tidyup(file_path)
 
-# Save Tidy data
-df.to_csv(nld['defaultdir'] + "/data/crns_data/tidy/"+country+"_SITE_" + sitenum+"_TIDY.txt", 
-          header=True, index=False, sep="\t",  mode='w')
 
 ############################# Neutron Coefficients ############################
 """
-Takes tidy data, creates neutron coefficients 
+Takes tidy data, creates neutron correction factors for pressure, humidity, 
+solar intensity and aboveground biomass. Saves the dataframe and outputs df and metadata. 
 """
 # Output the new df plus updated meta
 df, meta = smoon.neutcoeffs(df, country, sitenum)
 
-# Save Lvl1 data
-df.to_csv(nld['defaultdir'] + "/data/crns_data/level1/"+country+"_SITE_" + sitenum+"_LVL1.txt",
-          header=True, index=False, sep="\t",  mode='w')
 
 ############################ N0 Calibration ################################
 """
 N0 calibration script. Output is the meta_data with the updated N0 value.
-
 """
 
-meta = smoon.n0_calib(meta, country, sitenum, 0, nld['accuracy'], write=True)
+meta, N0 = smoon.n0_calib(meta, country, sitenum, nld['accuracy'], write=True)
 
 ###############################################################################
 #                          Quality Analysis                                   #
@@ -77,7 +71,6 @@ N0. This then allows flagging of values to be removed. It will then be updated.
 """
 
 # flag and remove the datapoints that get flagged
-N0 = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "NEW_N0"].item()
 df = smoon.flag_and_remove(df, N0)
 
 df = smoon.QA_plotting(df, country, sitenum, nld['defaultdir'])

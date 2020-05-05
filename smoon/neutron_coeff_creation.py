@@ -33,26 +33,12 @@ import math
 import pandas as pd # Pandas for dataframe
 import numpy as np
 import smoon
-#import neutron_correction_funcs as ncf #!!! May need to change then when package installed 
-                                            #(e.g. delete this line and use smoon.pv)
 
 def neutcoeffs(df, country, sitenum):    
     
     # Read in meta fresh
     meta = pd.read_csv(nld['defaultdir']+"/data/meta_data.csv")
     meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Add leading zeros
-    
-    ###############################################################################
-    #                            Pressure                                         #
-    ###############################################################################
-    
-    """
-    
-    """
-    refpres = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "REFERENCE_PRESS"].item()
-    beta = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "BETA_COEFF"].item()
-    df['fbar'] = df.apply(lambda row: smoon.pressfact_B(row['PRESS'], beta, refpres), axis = 1)
-    
     
     ###############################################################################
     #                    Atmospheric Water Vapour                                 #
@@ -68,7 +54,21 @@ def neutcoeffs(df, country, sitenum):
     df['pv'] = df.apply(lambda row: smoon.pv(row['VP'], row['TEMP']), axis=1) # VP is in Pascals and TEMP is in Cel
     df['pv'] = df['pv']*1000 # convert Kg m-3 to g m-3
     df["fawv"] = df.apply(lambda row: smoon.humfact(row['pv'], nld['pv0']), axis=1)
+
     
+    ###############################################################################
+    #                            Pressure                                         #
+    ###############################################################################
+    
+    """
+    
+    """
+    refpres = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "REFERENCE_PRESS"].item()
+    beta = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "BETA_COEFF"].item()
+    df['fbar'] = df.apply(lambda row: smoon.pressfact_B(row['PRESS'], beta, refpres), axis = 1)
+    
+    
+
     ###############################################################################
     #                       Solar Intensity                                       #
     ###############################################################################
@@ -115,14 +115,6 @@ def neutcoeffs(df, country, sitenum):
     df['ERR'] = (np.sqrt(df['MOD'])/df['MOD']) * df['MODCORR']
     df['ERR'] = df['ERR'].apply(np.floor)
     
-    # These can be removed eventually - currently they are used for analysis
-    df['MODnoawv'] = df['MOD'] * df['fbar'] * df['fsolGV'] * df['fagb'] 
-    df['MODnoawv'] = df['MODnoawv'].apply(np.floor)
-    df['MODnosol'] = df['MOD'] * df['fbar'] * df['fagb'] * df['fawv'] 
-    df['MODnosol'] = df['MODnosol'].apply(np.floor)
-    df['MODnobar'] = df['MOD'] * df['fagb'] * df['fsolGV'] * df['fawv'] 
-    df['MODnobar'] = df['MODnobar'].apply(np.floor)
-    
     # Remove calcs done on missing data
     DTstore = df['DT']
     df = df.reset_index(drop=True)
@@ -132,5 +124,8 @@ def neutcoeffs(df, country, sitenum):
     df = df.replace(np.nan,-999)
     df = df.round(3) # decimal place limit
     
+    # Save Lvl1 data
+    df.to_csv(nld['defaultdir'] + "/data/crns_data/level1/"+country+"_SITE_" + sitenum+"_LVL1.txt",
+          header=True, index=False, sep="\t",  mode='w')
     
     return df, meta

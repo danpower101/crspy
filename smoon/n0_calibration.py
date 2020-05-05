@@ -132,7 +132,7 @@ def rscaled (r, p, Hveg, y) :
 
 
 
-def n0_calib(meta, country, sitenum, Hveg, defineaccuracy, write):
+def n0_calib(meta, country, sitenum, defineaccuracy, write):
     
         # Bulk Density (bd), Site Name, Soil Organic Carbon (soc) and lattice water (lw) taken from meta data
     bd = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'BD'].item() #Here using average of BD given in calibration data
@@ -143,7 +143,7 @@ def n0_calib(meta, country, sitenum, Hveg, defineaccuracy, write):
     sitename = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'SITE_NAME'].item()
     soc = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'SOC'].item() 
     lw = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'LW'].item()
-    
+    Hveg = 0 # Hveg not used due to lack of reliable data and small impact.
     
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -152,7 +152,7 @@ def n0_calib(meta, country, sitenum, Hveg, defineaccuracy, write):
     
     First some housekeeping - create folders for writing to later on
     """
-    
+    print("Creating Folders...")
     uniquefolder = country + "_" + str(sitenum) # Create a folder name for reports and tables unique to site
     os.chdir(nld['defaultdir'] + "/data/n0_calibration/") # Change wd to folder for N0 recalib
     alreadyexist = os.path.exists(uniquefolder) # Checks if the folder exists
@@ -163,7 +163,7 @@ def n0_calib(meta, country, sitenum, Hveg, defineaccuracy, write):
         pass
     
     os.chdir(nld['defaultdir']) # Change back to main wd
-    
+    print("Done")
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~ CALIBRATION DATA READ AND TIDY ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -171,6 +171,7 @@ def n0_calib(meta, country, sitenum, Hveg, defineaccuracy, write):
     
     Read in the calibration data and do some tidying to it
     """
+    print("Fetching calibration data...")
     # Read in Calibration data for Site_11
     df = pd.read_csv(nld['defaultdir'] + "/data/calibration_data/Calib_"+country+"_SITE_" + sitenum+".csv")
     df.columns = ("LABEL", "TYPE", "URL", "CHANGE", "CHANGE2", "MODIFIED", "DEPTH", "WET_TOTAL", "DRY_TOTAL", 
@@ -181,7 +182,7 @@ def n0_calib(meta, country, sitenum, Hveg, defineaccuracy, write):
     
     unidate = df.DATE.unique() # Make object of unique dates (calib dates)
     df['LOC'] = df['LOC'].astype(str) # Dtype into string
-    
+    print("Done")
     
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -221,6 +222,7 @@ def n0_calib(meta, country, sitenum, Hveg, defineaccuracy, write):
     handling this is converted into an average depth of the range.
     
     """
+    print("Collecting additional data...")
     # Turn depth range into a point value by taking average of the range
     depth = df["DEPTH"].str.split(" ", n = 1, expand = True) 
     depth = depth[0].str.split("-", n=1, expand = True) # Splits the column using the '-' between the depths
@@ -284,7 +286,7 @@ def n0_calib(meta, country, sitenum, Hveg, defineaccuracy, write):
         tmp= tmp[(tmp['DT'] > str(unidate[i])+' 16:00:00') & (tmp['DT'] <= str(unidate[i])+' 23:00:00')]# COSMOS time of Calib
         avgVP[i] = float(np.nanmean(tmp['VP'], axis=0))
     
-
+    print("Done")
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~ THE BIG ITERATIVE LOOP - CALCULATE WEIGHTED THETA ~~~~~~~~~~~~~~~~~~~~
@@ -300,6 +302,7 @@ def n0_calib(meta, country, sitenum, Hveg, defineaccuracy, write):
     
     for i in range(len(dflvl1Days)): # for i in number of calib days...
         
+        print("Calibrating to day "+str(i+1)+"...")
         df1 = pd.DataFrame.from_dict(dfCalib[i]) # Assign first calib day df to df1
         CalibTheta = df1['SWV'].mean()           # Unweighted mean of SWV
         Accuracy = 1                             # Assign accuracy as 1 to be compared to in while loop below
@@ -404,7 +407,7 @@ def n0_calib(meta, country, sitenum, Hveg, defineaccuracy, write):
             
             
             Accuracy = abs((CalibTheta - thetainitial) / thetainitial) # Calculate new accuracy
-            
+        print("Done")
     
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -421,7 +424,7 @@ def n0_calib(meta, country, sitenum, Hveg, defineaccuracy, write):
     correct N0.
     
     """
-    
+    print("Finding Optimised N0...")
     tmp = pd.read_csv(nld['defaultdir'] +'/data/crns_data/level1/'+country + '_SITE_'+sitenum+'_LVL1.txt', sep='\t')
     tmp['DATE'] = pd.to_datetime(tmp['DT'], format="%Y-%m-%d %H:%M:%S")  #Use correct formatting - MAY NEED CHANGING AGAIN DUE TO EXCEL
     tmp['DATE'] = tmp['DATE'].dt.date  # Remove the time portion to match above
@@ -437,39 +440,40 @@ def n0_calib(meta, country, sitenum, Hveg, defineaccuracy, write):
         avgN[i] = float(tmp['CALIBCORR'].mean()) # !!! change back to MODCORR - fixed but check back
     
     RelerrDict = dict()    
-    for i in range(numdays):    
-        N0 = pd.Series(range(0,10000)) # Create a series of N0's to test from 0 to 10000
-        vwc = AvgTheta[i] / 100 # Avg theta divided by 100 to be given as decimal
-        Nave = avgN[i] #Taken as average for calibration period
-        sm=pd.DataFrame(columns = ['sm'])
-        reler=pd.DataFrame(columns = ['RelErr'])
-    
-    
-        for j in range(len(N0)):
-          
-            sm.loc[j] = ( ( nld["a0"] / ( (Nave / N0.loc[j] ) - nld["a1"] ) ) - nld["a2"] - lw - soc) * bd
-            tmp = sm.iat[j,0]
-            reler.loc[j]  = abs((sm.iat[j,0] - vwc)/vwc); # Accuracy normalised to vwc
+    with np.errstate(divide='ignore'): # prevent divide by 0 error message
+        for i in range(numdays):    
+            N0 = pd.Series(range(0,10000)) # Create a series of N0's to test from 0 to 10000
+            vwc = AvgTheta[i] / 100 # Avg theta divided by 100 to be given as decimal
+            Nave = avgN[i] #Taken as average for calibration period
+            sm=pd.DataFrame(columns = ['sm'])
+            reler=pd.DataFrame(columns = ['RelErr'])
         
-        RelerrDict[i] = reler['RelErr']
         
-    
-        plt.plot(reler, label = str(unidate[i]))
-        plt.yscale('log')
-        plt.xlabel('N0')
-        plt.ylabel('Relative Error (log scale)')
-        plt.title('Relative Error plot on log scale')
-        plt.legend()
+            for j in range(len(N0)):
+              
+                sm.loc[j] = ( ( nld["a0"] / ( (Nave / N0.loc[j] ) - nld["a1"] ) ) - nld["a2"] - lw - soc) * bd
+                tmp = sm.iat[j,0]
+                reler.loc[j]  = abs((sm.iat[j,0] - vwc)/vwc); # Accuracy normalised to vwc
+            
+            RelerrDict[i] = reler['RelErr']
+            
         
-        # Write a csv for the error for this calibration day
-        os.chdir(nld['defaultdir'] +"/data/n0_calibration/"+uniquefolder) # Change wd to folder
-        
-        plt.savefig("Relative_Error_Plot.png")
-        reler['N0'] = range(0,10000) # Add N0 for csv write
-        
-        reler.to_csv(country + '_SITE_'+sitenum+'_error_' + str(unidate[i]) + '.csv',
-                   header=True, index=False,  mode='w')
-        os.chdir(nld['defaultdir']) # Change back
+            plt.plot(reler, label = str(unidate[i]))
+            plt.yscale('log')
+            plt.xlabel('N0')
+            plt.ylabel('Relative Error (log scale)')
+            plt.title('Relative Error plot on log scale')
+            plt.legend()
+            
+            # Write a csv for the error for this calibration day
+            os.chdir(nld['defaultdir'] +"/data/n0_calibration/"+uniquefolder) # Change wd to folder
+            
+            plt.savefig("Relative_Error_Plot.png")
+            reler['N0'] = range(0,10000) # Add N0 for csv write
+            
+            reler.to_csv(country + '_SITE_'+sitenum+'_error_' + str(unidate[i]) + '.csv',
+                       header=True, index=False,  mode='w')
+            os.chdir(nld['defaultdir']) # Change back
         
         
     """
@@ -491,11 +495,12 @@ def n0_calib(meta, country, sitenum, Hveg, defineaccuracy, write):
     totalerror = totalerror.to_frame()
     totalerror['N0'] = range(0, len(reler))
     minindex = totalerror.loc[totalerror.RelErr == minimum_error]  # Create object that maintains the index value at min
+    print("Done")
     print(minindex)                 # Show the minimum error value with the index valu. Index = N0
     
     N0 = minindex['N0'].item()
     
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'NEW_N0'] = N0
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'N0'] = N0
     if write:
         meta.to_csv(nld['defaultdir'] + "/data/meta_data.csv", header=True, index=False, mode='w')
     else:
@@ -548,4 +553,4 @@ def n0_calib(meta, country, sitenum, Hveg, defineaccuracy, write):
     
     
     os.chdir(nld['defaultdir']) # Change back
-    return meta
+    return meta, N0

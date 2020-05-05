@@ -15,7 +15,23 @@ import os
 #                          The flagging                                       #
 ###############################################################################
 def flag_and_remove(df, N0):
+    """
+    Quality control to remove values that are in error. 
+    
+    Flags:
+        1 = fast neutron counts more than 20% difference to previous count
+        2 = fast neutron counts less than the minimum count rate (default == 30%, can be set in namelist)
+        3 = fast neutron counts more than n0
+        4 = battery below 10v
+    """
+    df['TMP_INDEX'] = range(0, len(df['MOD']))
+    df2 = df
+    df2['FLAG'] = 0 # initialise FLAG to 0
+    
+    df2.loc[df2.MOD > N0, "FLAG"] = 3 # Flag consistent with COSMOS-USA system
     df = df.drop(df[df.MOD > N0].index)   # drop above N0
+    
+    df2.loc[df2.MOD < (N0*(nld['belowN0']/100)), "FLAG"] = 2
     df = df.drop(df[df.MOD < (N0*(nld['belowN0']/100))].index) # drop below 0.3 N0
     df = df.reset_index(drop=True)
     
@@ -35,6 +51,15 @@ def flag_and_remove(df, N0):
         indvdiff = (later / earlier)*100
         prcntdiff.append(indvdiff)
     df['PRCNTDIFF'] = prcntdiff
+    
+    diff1 = np.where(df['PRCNTDIFF'] > nld['timestepdiff'])
+    diff1 = diff1[0]
+    diff2 = np.where(df.PRCNTDIFF < (-nld['timestepdiff']))
+    diff2 = diff2[0]
+    
+    df2['FLAG'][diff1] = 1
+    df2['FLAG'][diff2] = 1
+    df2 = df2.drop('TMP_INDEX', axis = 1)
     
     df = df.drop(df[df.PRCNTDIFF > nld['timestepdiff']].index)
     df = df.drop(df[df.PRCNTDIFF < (-nld['timestepdiff'])].index)

@@ -53,7 +53,7 @@ def thetaprocess(df, meta, country, sitenum):
     lw = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'LW'].item()
     soc = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'SOC'].item()
     bd = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'BD'].item()
-    N0 = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'NEW_N0'].item()
+    N0 = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'N0'].item()
     hveg = 0 # Set to 0 to remove as data avilability low and impact low
     sm_min = 0 # Cannot have less than none
     sm_max = (1-(bd/(nld['density'])))*100 # Create a max realistic vol sm (NEED TO CONSIDER NUMBER FOR DENSITY)!!!

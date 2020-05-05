@@ -86,7 +86,7 @@ def tidyup(fileloc):
     ###############################################################################
     avgp = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "MEAN_PRESS"].item()
     elev = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "ELEV"].item()
-    lat = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "LOC_LAT"].item()
+    lat = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "LATITUDE"].item()
     r_c = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "GV"].item()
     beta, refpress = smoon.betacoeff(avgp, lat, elev, r_c)
     meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'BETA_COEFF'] = abs(beta)
@@ -124,7 +124,7 @@ def tidyup(fileloc):
     """
     Read in netcdfs in a loop - attaching data for each variable to df. 
     """
-    era5 = xr.open_dataset(nld['defaultdir']+"data/era5land/era5land_all.nc") #
+    era5 = xr.open_dataset(nld['defaultdir']+"data/era5land/"+nld['era5_filename']+".nc") #
     era5site = era5.sel(site=sitecode)
     era5time = pd.to_datetime(era5site.time.values)
     
@@ -137,13 +137,13 @@ def tidyup(fileloc):
     # Add the ERA5_Land data 
     if df.E_TEM.mean() == -999:
         df['TEMP'] = df['DT'].map(temp_dict)
-        meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'TEM_DATA'] = 'ERA5_Land'
+        meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'TEM_DATA_SOURCE'] = 'ERA5_Land'
     else:
         pass
     
     if df.RAIN.mean() == -999:
         df['RAIN'] = df['DT'].map(prcp_dict)
-        meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'RAIN_DATA'] = 'ERA5_Land'
+        meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'RAIN_DATA_SOURCE'] = 'ERA5_Land'
     else:
         print ('You now need to fix RAIN issue. Line 136')
         sys.exit()
@@ -170,10 +170,18 @@ def tidyup(fileloc):
                                       'E_RH','BATT','TEMP','RAIN', 'DEWPOINT_TEMP','VP','SWE','fsol',
                                       'JUNG_COUNT','fbar','VWC1','VWC2','VWC3', 'ERA5L_PRESS'])
     
+    df = df[['DT','MOD','UNMOD','PRESS','I_TEM','I_RH','E_TEM','E_RH','BATT','TEMP',
+         'RAIN','VP','DEWPOINT_TEMP','SWE',
+         'JUNG_COUNT','VWC1','VWC2','VWC3','fbar', 'fsol']]
+    
     # Add list of columns that some sites wont have data on - removes them if empty
     df = dropemptycols(['VWC1', 'VWC2', 'VWC3', 'E_TEM', 'E_RH'], df)
     df = df.round(3)
-    df.to_csv(nld['defaultdir'] + "/data/crns_data/tidy/"+country+"_SITE_" + sitenum+"_TIDY.txt", header=True, index=False, sep="\t",  mode='w')
+    #Change Order 
 
-	
+    
+	# Save Tidy data
+    df.to_csv(nld['defaultdir'] + "/data/crns_data/tidy/"+country+"_SITE_" + sitenum+"_TIDY.txt", 
+          header=True, index=False, sep="\t",  mode='w')
+    
     return df, country, sitenum, meta

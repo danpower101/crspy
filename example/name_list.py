@@ -13,6 +13,7 @@ defaultdir = "C:/user/example_working_directory" # CHANGE THIS TO YOUR WORKING D
 
 noval = -999
 
+era5_filename = "era5land_all"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
                                 # Pressure values
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -94,12 +95,10 @@ nld = {
        "a2":a2,
        "defaultbd":defaultbd,
        "cdtformat":cdtformat,
-       "daymeted": daymeted,
        "accuracy":accuracy,
        "belowN0":belowN0,
        "timestepdiff":timestepdiff,
        "density":density,
-       "edy":edy,
        "noval":noval,
        "pv0":pv0
        }
