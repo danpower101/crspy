@@ -19,6 +19,8 @@ imported as well as matplotlib.pyplot for plotting further down.
 from name_list import nld
 import smoon
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
 ################################ Find Files ###################################
 """
@@ -66,12 +68,10 @@ meta, N0 = smoon.n0_calib(meta, country, sitenum, nld['accuracy'], write=True)
 ###############################################################################
 """
 
-
-
 """
 
 # flag and remove the datapoints that get flagged
-df = smoon.flag_and_remove(df, N0)
+df = smoon.flag_and_remove(df, N0, country, sitenum)
 
 df = smoon.QA_plotting(df, country, sitenum, nld['defaultdir'])
 
@@ -80,9 +80,12 @@ df = smoon.QA_plotting(df, country, sitenum, nld['defaultdir'])
 #                          Theta Calculation                                  #
 ###############################################################################
 
-tmp2, tmpclean2 = smoon.thetaprocess(df, meta, country, sitenum)
+df = smoon.thetaprocess(df, meta, country, sitenum)
 
-tmp2.to_csv(nld['defaultdir'] + "/data/crns_data/theta/"+country+"_SITE_"+sitenum+"_SM.txt",
-                 header=True, index=False, sep="\t", mode="w")
-
-plt.plot(tmpclean2['SM_12h_SG'])
+###############################################################################
+#                             Plotting                                        #
+###############################################################################
+df = df.replace(-999, np.nan)
+df['DT'] = pd.to_datetime(df['DT'])
+df = df.set_index(df['DT'])
+plt.plot(df['SM_12h'])

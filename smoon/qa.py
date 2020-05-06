@@ -12,11 +12,10 @@ import numpy as np
 import os
 
 
-df = pd.read_csv(nld['defaultdir']+"data/crns_data/level1/USA_SITE_011_LVL1.txt", sep="\t")
 ###############################################################################
 #                          The flagging                                       #
 ###############################################################################
-def flag_and_remove(df, N0):
+def flag_and_remove(df, N0, country, sitenum):
     """
     Quality control to remove values that are in error. 
     
@@ -25,15 +24,14 @@ def flag_and_remove(df, N0):
         2 = fast neutron counts less than the minimum count rate (default == 30%, can be set in namelist)
         3 = fast neutron counts more than n0
         4 = battery below 10v
-        5 = no count for MOD
         
     """
     print("~~~~~~~~~~~~~ Flagging and Removing ~~~~~~~~~~~~~")
     print("Identifying erroneous data...")
     idx = df['DT']
     idx = pd.to_datetime(idx)
-    #idx = pd.date_range(idx[0], idx[-1], freq='1H', closed='left')
-
+    
+    df.reset_index(drop=True) # Reset index incase df is from another process and is DT
     df2 = df.copy()
     df2['FLAG'] = 0 # initialise FLAG to 0
     
@@ -64,11 +62,13 @@ def flag_and_remove(df, N0):
         prcntdiff.append(indvdiff)
     df['PRCNTDIFF'] = prcntdiff
     
+
     diff1 = np.where(df['PRCNTDIFF'] > nld['timestepdiff'])
     diff1 = diff1[0]
     diff2 = np.where(df.PRCNTDIFF < (-nld['timestepdiff']))
     diff2 = diff2[0]
     
+    df2 = df2.reset_index(drop=True)
     df2.loc[diff1, "FLAG"] = 1
     df2.loc[diff2, "FLAG"] = 1    
 
@@ -90,7 +90,11 @@ def flag_and_remove(df, N0):
     
     df=df.drop(["DIFF","PRCNTDIFF"], axis =1)
     
-    df.to_csv(nld['defaultdir'] + "/data/crns_data/level1/"+country+"_SITE_" + sitenum+"_LVL1.txt",
+    df = df[['DT', 'MOD', 'UNMOD', 'PRESS', 'I_TEM', 'I_RH', 'BATT', 'TEMP', 'RAIN',
+       'VP', 'DEWPOINT_TEMP', 'SWE', 'JUNG_COUNT', 'pv', 'FLAG', 'fbar', 'fsol',
+       'fawv', 'fsolGV', 'fagb', 'MOD_CORR', 'MOD_ERR']]
+    
+    df.to_csv(nld['defaultdir'] + "/data/crns_data/FINAL/"+country+"_SITE_" + sitenum+"_final.txt",
           header=True, index=False, sep="\t", mode='w')
     print("Done")
     return df
@@ -117,6 +121,7 @@ def QA_plotting(df, country, sitenum, defaultdir):
     
     print("~~~~~~~~~~~~~ Plotting QA Graphs ~~~~~~~~~~~~~")
     print("Saving plots...")
+    df = df.replace(nld['noval'],np.nan) # set error to nan values for plotting
     df['YEAR'] = df['DT'].dt.year
     df['MONTH'] = df['DT'].dt.month
     df['DAY'] = df['DT'].dt.day
@@ -181,7 +186,7 @@ def QA_plotting(df, country, sitenum, defaultdir):
     # Plot I_RH
     tseriesplots("I_RH", df, defaultdir, country, sitenum)
     
-    df = df.drop(['YEAR', 'MONTH', 'DAY', 'DIFF', 'PRCNTDIFF', "CALIBCORR"], axis=1)
+    df = df.drop(['YEAR', 'MONTH', 'DAY'], axis=1)
     df = df.replace(np.nan, nld['noval'])
     print("Done")
     return df

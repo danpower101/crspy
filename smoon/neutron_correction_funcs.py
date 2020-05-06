@@ -89,7 +89,7 @@ def RcCorr(Rc):
     Takes cutoff ridgity of site (Rc) and gives the RcCorr value required to 
     account for the difference to Jungfraujoch.
     """
-    return -0.075*(Rc-4.49)
+    return -0.075*(Rc-4.49)+1
 ####################################################################################
 #                            Above Ground Biomass                                  #
 ####################################################################################

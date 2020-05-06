@@ -103,15 +103,15 @@ def neutcoeffs(df, country, sitenum):
     """
     Need to create the MODCORR which is corrected neutrons. 
     """
-    df['MODCORR'] = df['MOD'] * df['fbar'] * df['fsolGV'] * df['fawv'] * df['fagb']  
-    df['MODCORR'] = df['MODCORR'].apply(np.floor)
+    df['MOD_CORR'] = df['MOD'] * df['fbar'] * df['fsolGV'] * df['fawv'] * df['fagb']  
+    df['MOD_CORR'] = df['MOD_CORR'].apply(np.floor)
     
     df['CALIBCORR'] = df['MOD'] * df['fbar'] * df['fsolGV'] * df['fawv']
     df['CALIBCORR'] = df['CALIBCORR'].apply(np.floor)
     
     # Error is the ((standard deviation) / MOD)*MODCORR
-    df['ERR'] = (np.sqrt(df['MOD'])/df['MOD']) * df['MODCORR']
-    df['ERR'] = df['ERR'].apply(np.floor)
+    df['MOD_ERR'] = (np.sqrt(df['MOD'])/df['MOD']) * df['MOD_CORR']
+    df['MOD_ERR'] = df['MOD_ERR'].apply(np.floor)
     
     # Remove calcs done on missing data
     DTstore = df['DT']

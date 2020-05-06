@@ -471,11 +471,14 @@ def n0_calib(meta, country, sitenum, defineaccuracy, write):
             os.chdir(nld['defaultdir'] +"/data/n0_calibration/"+uniquefolder) # Change wd to folder
             
             plt.savefig("Relative_Error_Plot.png")
+            
             reler['N0'] = range(0,10000) # Add N0 for csv write
             
             reler.to_csv(country + '_SITE_'+sitenum+'_error_' + str(unidate[i]) + '.csv',
                        header=True, index=False,  mode='w')
             os.chdir(nld['defaultdir']) # Change back
+            
+        plt.close()
         
         
     """
