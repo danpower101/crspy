@@ -31,6 +31,14 @@ def flag_and_remove(df, N0, country, sitenum):
     idx = df['DT']
     idx = pd.to_datetime(idx)
     
+    # Need to save external variables as when deleting and reindexing they are lost
+    
+    tmptemp = df['TEMP']
+    tmprain = df['RAIN']
+    tmpvp = df['VP']
+    tmpdp = df['DEWPOINT_TEMP']
+    tmpswe = df['SWE']
+    
     df.reset_index(drop=True) # Reset index incase df is from another process and is DT
     df2 = df.copy()
     df2['FLAG'] = 0 # initialise FLAG to 0
@@ -45,6 +53,7 @@ def flag_and_remove(df, N0, country, sitenum):
     df2.loc[(df2.BATT < 10) & (df2.BATT != nld['noval']), "FLAG"] = 4
     df = df.drop(df[df.BATT < 10].index)
     
+    df = df.reset_index(drop=True)
     # Drop >20% diff in timestep
     moddiff=[0]
     for i in range(len(df.MOD)-1):
@@ -83,7 +92,7 @@ def flag_and_remove(df, N0, country, sitenum):
     df = df.set_index(df.DT)
     df = df.reindex(idx, fill_value=nld['noval'])
     df['DT'] = pd.to_datetime(df['DT'])
-    df.loc[df.MOD == nld['noval'], :] = nld['noval']
+        
     flagseries = df2['FLAG']
     df['FLAG'] = flagseries.values # Place flag vals back into df
     df['DT'] = df.index
@@ -93,6 +102,14 @@ def flag_and_remove(df, N0, country, sitenum):
     df = df[['DT', 'MOD', 'UNMOD', 'PRESS', 'I_TEM', 'I_RH', 'BATT', 'TEMP', 'RAIN',
        'VP', 'DEWPOINT_TEMP', 'SWE', 'JUNG_COUNT', 'pv', 'FLAG', 'fbar', 'fsol',
        'fawv', 'fsolGV', 'fagb', 'MOD_CORR', 'MOD_ERR']]
+    
+    # Add the external variables back in
+    
+    df['TEMP'] = tmptemp
+    df['RAIN'] = tmprain
+    df['VP'] = tmpvp
+    df['DEWPOINT_TEMP'] = tmpdp
+    df['SWE'] = tmpswe
     
     df.to_csv(nld['defaultdir'] + "/data/crns_data/FINAL/"+country+"_SITE_" + sitenum+"_final.txt",
           header=True, index=False, sep="\t", mode='w')

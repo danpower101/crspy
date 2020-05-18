@@ -20,7 +20,7 @@ def initial():
         wd = string - working directory path
     """
     try:
-        mkdir(nld['defaultdir']+"/data/")
+        os.mkdir(nld['defaultdir']+"/data/")
     except:
         print("Folder already exists, skipping.")
         pass
