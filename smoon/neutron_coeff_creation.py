@@ -125,5 +125,6 @@ def neutcoeffs(df, country, sitenum):
     # Save Lvl1 data
     df.to_csv(nld['defaultdir'] + "/data/crns_data/level1/"+country+"_SITE_" + sitenum+"_LVL1.txt",
           header=True, index=False, sep="\t",  mode='w')
+    meta.to_csv(nld['defaultdir'] + "/data/meta_data.csv", header=True, index=False, mode='w')
     print ("Done")
     return df, meta

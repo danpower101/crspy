@@ -58,7 +58,7 @@ def thetaprocess(df, meta, country, sitenum):
     N0 = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'N0'].item()
     hveg = 0 # Set to 0 to remove as data avilability low and impact low
     sm_min = 0 # Cannot have less than zero
-    sm_max = (1-(bd/(nld['density'])))*100 # Create a max realistic vol sm.    
+    sm_max = (1-(bd/(nld['density']))) # Create a max realistic vol sm.    
     print("Done")
     ###############################################################################
     #                       Import Data                                           #
@@ -74,15 +74,15 @@ def thetaprocess(df, meta, country, sitenum):
     # Calculate soil moisture - including min and max error 
     df['SM'] = df.apply(lambda row: smoon.theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR'], N0, lw,
       soc), axis=1)
-    df['SM'] = df['SM']*100
+    df['SM'] = df['SM']
     
     df['SM_PLUS_ERR'] = df.apply(lambda row: smoon.theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR_MINUS'], N0, lw,
       soc), axis=1) # Find error (inverse relationship so use MOD minus for soil moisture positive Error)
-    df['SM_PLUS_ERR'] = df['SM_PLUS_ERR']*100  
+    df['SM_PLUS_ERR'] = df['SM_PLUS_ERR']  
     
     df['SM_MINUS_ERR'] = df.apply(lambda row: smoon.theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR_PLUS'], N0, lw,
       soc), axis=1)
-    df['SM_MINUS_ERR'] = df['SM_MINUS_ERR']*100   
+    df['SM_MINUS_ERR'] = df['SM_MINUS_ERR']   
     
     # Remove values above or below max and min volsm
     df.loc[df['SM'] < sm_min, 'SM'] = 0   
@@ -95,7 +95,7 @@ def thetaprocess(df, meta, country, sitenum):
     df.loc[df['SM_MINUS_ERR'] > sm_max, 'SM_MINUS_ERR'] = sm_max 
     print("Done")
     
-    df['SM_TOTAL_ERR'] = df['SM_PLUS_ERR'] - df['SM_MINUS_ERR']
+    df['SM_TOTAL_ERR'] = df['SM_PLUS_ERR'] - df['SM_MINUS_ERR']/2 
     
     # Take 12 hour average
     print("Averaging and writing table...")

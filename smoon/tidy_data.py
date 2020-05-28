@@ -1,7 +1,7 @@
 """
 Process The Data
 
-author: Daniel Power - University of Bristol PhD student
+author: Daniel Power - University of Bristol PhD candidate
 email: daniel.power@bristol.ac.uk
 
 This code will analyse the raw neutron counts  of a site. It will do this in a 
@@ -20,6 +20,7 @@ import datetime
 import xarray as xr
 import pylab
 import sys
+import numpy as np
 pylab.show()
 
 ###############################################################################
@@ -90,6 +91,7 @@ def tidyup(fileloc):
     avgp = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "MEAN_PRESS"].item()
     elev = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "ELEV"].item()
     lat = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "LATITUDE"].item()
+    lon = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "LONGITUDE"].item()
     r_c = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "GV"].item()
     beta, refpress = smoon.betacoeff(avgp, lat, elev, r_c)
     meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'BETA_COEFF'] = abs(beta)
@@ -164,6 +166,123 @@ def tidyup(fileloc):
     df['VP'] = df.apply(lambda row: smoon.dew2vap(row['DEWPOINT_TEMP']), axis=1) # VP is in kPA
     df['VP'] = df['VP']*1000 # Convert to Pascals
     print("Done")
+    
+    ###############################################################################
+    #                         Collect meta_data                                   #
+    ###############################################################################     
+    print("Collecting additional meta data for site...")
+    #Collect variables from ISRIC API for the relevant 250m grid
+    resdict = smoon.isric_variables(lat, lon)
+    wrb = smoon.isric_wrb_class(lat, lon)
+    
+    """
+    Each variable will be coded like below with mapped units as below:
+    0=bdod  - bulk density - (cg/cm**3)
+    1=cec - cation exchange capacity - (mmol(c))
+    2=cfvo - coarse fragment volume - (cm**3/dm**3)
+    3=clay (g/kg)
+    4=nitrogen (cg/kg)
+    5=ocd - organic carbon density - (kg/dm**3)
+    6=phh20 -pH of Water - (pHx10)
+    7=sand (g/kg)
+    8=silt  (g/kg)
+    9=soc - soil organic carbon (dg/kg)
+    """
+    #Bulk Density
+    bdod = smoon.isric_depth_mean(resdict, 0)
+    bdod = bdod/100 # convert to decimal fraction
+    bdoduc = smoon.isric_depth_uc(resdict, 0)
+    bdoduc = bdoduc/100
+    
+    #Cation Exchange Capacity
+    cec = smoon.isric_depth_mean(resdict, 1)
+    cecuc = smoon.isric_depth_uc(resdict, 1)
+
+    # Coarse Fragment Volume
+    cfvo = smoon.isric_depth_mean(resdict, 2)
+    cfvo = cfvo/10 # convert to decimal fraction
+    cfvouc = smoon.isric_depth_uc(resdict, 2)
+    cfvouc = cfvouc/10
+
+    # Clay as prcnt
+    clay = smoon.isric_depth_mean(resdict, 3)
+    clay = clay/1000 # convert to decimal fraction
+    clayuc = smoon.isric_depth_uc(resdict, 3)
+    clayuc = clayuc/1000
+
+    # Nitrogen
+    nitro = smoon.isric_depth_mean(resdict, 4)
+    nitro = nitro/100 # convert to g/kg
+    nitrouc = smoon.isric_depth_uc(resdict, 4)
+    nitrouc = nitrouc/100
+
+    #OCD CURRENTLY DATA APPEARS TO ALWAYS BE NONETYPE - REMOVED
+   # ocd = smoon.isric_depth_mean(resdict, 5)
+   # ocd = ocd/1000 # convert to kg/dm**3
+   # ocduc = smoon.isric_depth_uc(resdict, 5)
+   # ocduc = ocduc/1000
+
+    #phh20
+    phh20 = smoon.isric_depth_mean(resdict, 6)
+    phh20 = phh20/10 # convert to pH
+    phh20uc = smoon.isric_depth_uc(resdict, 6)
+    phh20uc = phh20uc/10
+
+    #Sand
+    sand = smoon.isric_depth_mean(resdict, 7)
+    sand = sand/1000 # convert to decimal fraction
+    sanduc = smoon.isric_depth_uc(resdict, 7)
+    sanduc = sanduc/1000
+
+    #Silt
+    silt = smoon.isric_depth_mean(resdict, 8)
+    silt = silt/1000 # convert to decimal fraction
+    siltuc = smoon.isric_depth_uc(resdict, 8)
+    siltuc = siltuc/1000    
+    
+    #SOC
+    soc  = smoon.isric_depth_mean(resdict, 9)
+    soc = soc/1000 # convert to decimal fraction
+    socuc = smoon.isric_depth_uc(resdict, 9)
+    socuc = socuc/1000   
+    
+    
+    
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'BD_ISRIC'] = bdod
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'BD_ISRIC_UC'] = bdoduc
+    
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'SOC_ISRIC'] = soc
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'SOC_ISRIC_UC'] = socuc
+    
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'pH_H20_ISRIC'] = phh20
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'pH_H20_ISRIC_UC'] = phh20uc
+    
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'CEC_ISRIC'] = cec
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'CEC_ISRIC_UC'] = cecuc    
+    
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'CFVO_ISRIC'] = cfvo
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'CFVO_ISRIC_UC'] = cfvouc    
+    
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'NITROGEN_ISRIC'] = nitro
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'NITROGEN_ISRIC_UC'] = nitrouc
+
+    #meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'OCD_ISRIC'] = ocd
+    #meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'OCD_ISRIC_UC'] = ocduc
+    
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'SAND_ISRIC'] = sand
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'SAND_ISRIC_UC'] = sanduc
+
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'SILT_ISRIC'] = silt
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'SILT_ISRIC_UC'] = siltuc
+    
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'CLAY_ISRIC'] = clay
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'CLAY_ISRIC_UC'] = clayuc
+    
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'TEXTURE'] = smoon.soil_texture(sand, silt, clay)    
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'WRB_ISRIC'] = wrb
+
+    print("Done")
+    
     ###############################################################################
     #                            The Final Table                                  #
     #                                                                             #
@@ -185,7 +304,7 @@ def tidyup(fileloc):
     df = df.round(3)
     #Change Order 
 
-    
+    meta.to_csv(nld['defaultdir'] + "/data/meta_data.csv", header=True, index=False, mode='w')
 	# Save Tidy data
     df.to_csv(nld['defaultdir'] + "/data/crns_data/tidy/"+country+"_SITE_" + sitenum+"_TIDY.txt", 
           header=True, index=False, sep="\t",  mode='w')

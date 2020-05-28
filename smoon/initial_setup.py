@@ -103,7 +103,7 @@ def initial():
         pass
 		
     columns_names = ["COUNTRY", "SITENUM", "SITENAME", "INSTALL_DATE", "LOC_LAT", "LOC_LON", "ELEV", "TIMEZONE", "GV", "MEAN_PRESS", "LW",
-                    "SOC", "BD", "CALIB", "NEW_N0", "AGBWEIGHT", "BETA_COEFF", "RAIN_DATA", "TEM_DATA"
+                    "SOC", "BD", "CALIB", "NEW_N0", "AGBWEIGHT", "BETA_COEFF", "RAIN_DATA_SOURCE", "TEM_DATA_SOURCE"
                     ]
     # Write metadata file structure if not already there.
     pathfile = nld['defaultdir']+"/data/meta_data.csv"
