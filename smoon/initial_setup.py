@@ -102,6 +102,12 @@ def initial():
         print("Folder already exists, skipping.")
         pass
 		
+   try:
+        os.mkdir(nld['defaultdir']+"/data/land_cover_data")
+    except:
+        print("Folder already exists, skipping.")
+        pass
+		
     columns_names = ["COUNTRY", "SITENUM", "SITENAME", "INSTALL_DATE", "LOC_LAT", "LOC_LON", "ELEV", "TIMEZONE", "GV", "MEAN_PRESS", "LW",
                     "SOC", "BD", "CALIB", "NEW_N0", "AGBWEIGHT", "BETA_COEFF", "RAIN_DATA_SOURCE", "TEM_DATA_SOURCE"
                     ]

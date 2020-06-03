@@ -20,7 +20,6 @@ import datetime
 import xarray as xr
 import pylab
 import sys
-import numpy as np
 pylab.show()
 
 ###############################################################################
@@ -40,7 +39,7 @@ def dropemptycols(colstocheck, df1):
             pass
     return df1
 
-def tidyup(fileloc):
+def prepare_data(fileloc):
     """
     Read in meta_data. Format DateTime. Check for external vars. If not availble
     use ERA5-Land data (additional module to obtain this)
@@ -280,8 +279,13 @@ def tidyup(fileloc):
     
     meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'TEXTURE'] = smoon.soil_texture(sand, silt, clay)    
     meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'WRB_ISRIC'] = wrb
-
+    
     print("Done")
+    
+    ################### Collect land data ########################
+    
+    lc = smoon.find_lc(lat, lon)
+    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'LAND_COVER'] = lc
     
     ###############################################################################
     #                            The Final Table                                  #
