@@ -87,8 +87,16 @@ def prepare_data(fileloc):
     ###############################################################################
     print("Calculate Beta Coeff...")
     
-    avgp = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "MEAN_PRESS"].item()
+    #!!!TEMP fix below - potentially remove MEAN_PRESS all together as the output refpress
+    # is essentially the same concept. Calculated though.
     elev = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "ELEV"].item()
+    try:
+        avgp = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "MEAN_PRESS"].item()
+    except:
+        avgp = (101325*(1-2.25577*(10**-5)*elev)**5.25588)/100
+    #########
+    
+    
     lat = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "LATITUDE"].item()
     lon = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "LONGITUDE"].item()
     r_c = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "GV"].item()
@@ -130,41 +138,45 @@ def prepare_data(fileloc):
     Read in netcdfs in a loop - attaching data for each variable to df. 
     """
     print("Collecting ERA-5 Land variables...")
-    era5 = xr.open_dataset(nld['defaultdir']+"data/era5land/"+nld['era5_filename']+".nc") #
-    era5site = era5.sel(site=sitecode)
-    era5time = pd.to_datetime(era5site.time.values)
+    try:
+        era5 = xr.open_dataset(nld['defaultdir']+"data/era5land/"+nld['era5_filename']+".nc") #
+        era5site = era5.sel(site=sitecode)
+        era5time = pd.to_datetime(era5site.time.values)
+        
+        temp_dict = dict(zip(era5time, era5site.temperature.values-273.15)) # minus 273.15 to convert to celcius as era5 stores it as kelvin
+        prcp_dict = dict(zip(era5time, era5site.precipitation.values))
+        dptemp_dict = dict(zip(era5time, era5site.dewpoint_temperature.values-273.15))    
+        press_dict = dict(zip(era5time, era5site.pressure.values*0.01)) # Want to check on this
+        swe_dict = dict(zip(era5time,era5site.snow_water_equiv.values))
+        
+        # Add the ERA5_Land data 
+        if df.E_TEM.mean() == -999:
+            df['TEMP'] = df['DT'].map(temp_dict)
+            meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'TEM_DATA_SOURCE'] = 'ERA5_Land'
+        else:
+            pass
+        
+        if df.RAIN.mean() == -999:
+            df['RAIN'] = df['DT'].map(prcp_dict)
+            meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'RAIN_DATA_SOURCE'] = 'ERA5_Land'
+        else:
+            print ('You now need to fix RAIN issue. Line 136')
+            sys.exit()
+        
+        df['DEWPOINT_TEMP'] = df['DT'].map(dptemp_dict)   
+        df['SWE'] = df['DT'].map(swe_dict)
+        df['ERA5L_PRESS'] = df['DT'].map(press_dict)
     
-    temp_dict = dict(zip(era5time, era5site.temperature.values-273.15)) # minus 273.15 to convert to celcius as era5 stores it as kelvin
-    prcp_dict = dict(zip(era5time, era5site.precipitation.values))
-    dptemp_dict = dict(zip(era5time, era5site.dewpoint_temperature.values-273.15))    
-    press_dict = dict(zip(era5time, era5site.pressure.values*0.01)) # Want to check on this
-    swe_dict = dict(zip(era5time,era5site.snow_water_equiv.values))
+        # PRESS2 is more accurate pressure gauge - use if available
+        df['PRESS'] = df['PRESS2']
+        df.loc[df['PRESS'] == -999, 'PRESS'] = df['PRESS1']
     
-    # Add the ERA5_Land data 
-    if df.E_TEM.mean() == -999:
-        df['TEMP'] = df['DT'].map(temp_dict)
-        meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'TEM_DATA_SOURCE'] = 'ERA5_Land'
-    else:
-        pass
-    
-    if df.RAIN.mean() == -999:
-        df['RAIN'] = df['DT'].map(prcp_dict)
-        meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'RAIN_DATA_SOURCE'] = 'ERA5_Land'
-    else:
-        print ('You now need to fix RAIN issue. Line 136')
-        sys.exit()
-    
-    df['DEWPOINT_TEMP'] = df['DT'].map(dptemp_dict)   
-    df['SWE'] = df['DT'].map(swe_dict)
-    df['ERA5L_PRESS'] = df['DT'].map(press_dict)
+        df['VP'] = df.apply(lambda row: smoon.dew2vap(row['DEWPOINT_TEMP']), axis=1) # VP is in kPA
+        df['VP'] = df['VP']*1000 # Convert to Pascals
+        print("Done")
+    except:
+        print("Cannot load era5_land data. Please download data as it is needed.")
 
-    # PRESS2 is more accurate pressure gauge - use if available
-    df['PRESS'] = df['PRESS2']
-    df.loc[df['PRESS'] == -999, 'PRESS'] = df['PRESS1']
-
-    df['VP'] = df.apply(lambda row: smoon.dew2vap(row['DEWPOINT_TEMP']), axis=1) # VP is in kPA
-    df['VP'] = df['VP']*1000 # Convert to Pascals
-    print("Done")
     
     ###############################################################################
     #                         Collect meta_data                                   #

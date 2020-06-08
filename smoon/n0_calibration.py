@@ -140,7 +140,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy, write):
     bd = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'BD'].item() #Here using average of BD given in calibration data
     bdunavailable = False
     if math.isnan(bd):
-        bd = nld['defaultbd']  
+        bd = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'BD_ISRIC'].item() # Use ISRIC data if unavailable
         bdunavailable = True
     sitename = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'SITE_NAME'].item()
     soc = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'SOC'].item() 
@@ -176,14 +176,25 @@ def n0_calib(meta, country, sitenum, defineaccuracy, write):
     print("Fetching calibration data...")
     # Read in Calibration data for Site_11
     df = pd.read_csv(nld['defaultdir'] + "/data/calibration_data/Calib_"+country+"_SITE_" + sitenum+".csv")
-    df.columns = ("LABEL", "TYPE", "URL", "CHANGE", "CHANGE2", "MODIFIED", "DEPTH", "WET_TOTAL", "DRY_TOTAL", 
-                  "TARE", "WET_SOIL", "DRY_SOIL", "SWW", "BD", "SWV", "DATE", 
-                  "TIN_LABEL", "LOC", "VOLUMETRIC")
+    COSMOScols = ['label:number', 'type:text', 'uri:url', 'change:text',
+       'changedItem:text', 'modified:text', 'Depth_cm:number',
+       'Wet_total_g:number', 'Dry_total_g:number', 'Tare_g:number',
+       'Wet_soil_g:number', 'Dry_soil_g:number', 'Soil_water_w_%:number',
+       'Bulk_density:number', 'Soil_water_v_%:number', 'date:text',
+       'Tin_Label:text', 'Location:text', 'Volumetric:text']
+    cols = list(df.columns)
+    
+    #Check to see if calibration is in COSMOS format - if so rename
+    if cols == COSMOScols:
+        df.columns = ("LABEL", "TYPE", "URL", "CHANGE", "CHANGE2", "MODIFIED", "DEPTH", "WET_TOTAL", "DRY_TOTAL", 
+                      "TARE", "WET_SOIL", "DRY_SOIL", "SWW", "BD", "SWV", "DATE", 
+                      "TIN_LABEL", "LOC", "VOLUMETRIC")
+        df['LOC'] = df['LOC'].astype(str) # Dtype into string      
+        
     df['DATE'] = pd.to_datetime(df['DATE'], format=nld['cdtformat'])  # Dtype into DATE
     df['DATE'] = df['DATE'].dt.date # Remove the hour part as  interested in DATE here
-    
+        
     unidate = df.DATE.unique() # Make object of unique dates (calib dates)
-    df['LOC'] = df['LOC'].astype(str) # Dtype into string
     print("Done")
     
     """
@@ -197,23 +208,26 @@ def n0_calib(meta, country, sitenum, defineaccuracy, write):
     
     Try/except introduced as sometimes direction isn't available.
     """
-    # Create a column with radius from sensor in it from LOC
-    radius = [] # Placeholder
-    direction = [] # Placeholder
-    for row in df['LOC']:
-        m = re.match(r"(?P<dir>[a-zA-Z]+)(?P<rad>.+)$",row) # dir = letters & rad = numbers
-        try:
-            direction.append(m.group('dir'))
-            radius.append(m.group('rad'))    # Append to the above placeholders
-        except AttributeError:
-            direction.append("None")
-            radius.append(row)
-    df['LOC_dir'] = direction 
-    df['LOC_rad'] = radius # Attach to the dataframe
-    
-    #ERROR - if LOC_dir or LOC_rad empty then format has not been followed - check input data has followed "Directional" "Metres"
-    
-    df['LOC_rad'] = df['LOC_rad'].astype(float) # dtype is float
+    if "LOC" in df.columns:        
+        # Create a column with radius from sensor in it from LOC
+        radius = [] # Placeholder
+        direction = [] # Placeholder
+        for row in df['LOC']:
+            m = re.match(r"(?P<dir>[a-zA-Z]+)(?P<rad>.+)$",row) # dir = letters & rad = numbers
+            try:
+                direction.append(m.group('dir'))
+                radius.append(m.group('rad'))    # Append to the above placeholders
+            except AttributeError:
+                direction.append("None")
+                radius.append(row)
+        df['LOC_dir'] = direction 
+        df['LOC_rad'] = radius # Attach to the dataframe
+        
+        #Some data had "?" in place of LOC. Can't use as no idea on where sample from.
+        df = df[df['LOC_rad'].apply(lambda x: x.isnumeric())]
+        df['LOC_rad'] = df['LOC_rad'].astype(float)
+    else:    
+        df['LOC_rad'] = df['LOC_rad'].astype(float) # dtype is float
     
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -224,14 +238,21 @@ def n0_calib(meta, country, sitenum, defineaccuracy, write):
     handling this is converted into an average depth of the range.
     
     """
+    #!!!IF DEPTH_AVG exists skip...
+    
     print("Collecting additional data...")
-    # Turn depth range into a point value by taking average of the range
-    depth = df["DEPTH"].str.split(" ", n = 1, expand = True) 
-    depth = depth[0].str.split("-", n=1, expand = True) # Splits the column using the '-' between the depths
-    depth['0'] = depth[0].astype(float)
-    depth['1'] = depth[1].astype(float)
-    df['DEPTH_RANGE'] = (depth['1'] - depth['0'])      # Finds the average depth of range
-    df['DEPTH_AVG'] = depth['0'] + (df['DEPTH_RANGE']/2)
+    
+    if "DEPTH_AVG" not in df.columns:
+        # Turn depth range into a point value by taking average of the range
+        depth = df["DEPTH"].str.split(" ", n = 1, expand = True) 
+        depth = depth[0].str.split("-", n=1, expand = True) # Splits the column using the '-' between the depths
+        depth['0'] = depth[0].astype(float)
+        depth['1'] = depth[1].astype(float)
+        df['DEPTH_RANGE'] = (depth['1'] - depth['0'])      # Finds the average depth of range
+        df['DEPTH_AVG'] = depth['0'] + (df['DEPTH_RANGE']/2)
+    else:
+        df['DEPTH_AVG'] = df['DEPTH_AVG'].astype(float)
+
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~~ SEPERATE TABLES FOR EACH CALIB DAY ~~~~~~~~~~~~~~~~~~~~~~
@@ -308,18 +329,23 @@ def n0_calib(meta, country, sitenum, defineaccuracy, write):
         df1 = pd.DataFrame.from_dict(dfCalib[i]) # Assign first calib day df to df1
         CalibTheta = df1['SWV'].mean()           # Unweighted mean of SWV
         Accuracy = 1                             # Assign accuracy as 1 to be compared to in while loop below
-            #Create a profile tag for each profile
-        profiles = df1.LOC.unique()             # Find unique profiles
-        numprof = len(profiles)                 # Defines the number of profiles
-    
-            #Following mini-loop will append an integer value for each profile
-        pfnum = []
-        for row in df1['LOC']:          
-            for j in range(numprof):
-                if row == profiles[j,]:
-                    pfnum.append(j+1)
-        df1['profilegroup'] = pfnum
-    
+        
+        
+        # COSMOS data needs some processing to get profiles - check if already available
+        if "PROFILE" not in df1.columns:
+                #Create a profile tag for each profile 
+            profiles = df1.LOC.unique()             # Find unique profiles
+            numprof = len(profiles)                 # Defines the number of profiles
+        
+                #Following mini-loop will append an integer value for each profile
+            pfnum = []
+            for row in df1['LOC']:          
+                for j in range(numprof):
+                    if row == profiles[j,]:
+                        pfnum.append(j+1)
+            df1['PROFILE'] = pfnum
+        
+
                 # Now loop the iteration until the defined accuracy is achieved
         while Accuracy > defineaccuracy:
             #Initial Theta
@@ -340,14 +366,14 @@ def n0_calib(meta, country, sitenum, defineaccuracy, write):
             df1['thetweight'] = df1['SWV'] * df1['Wd']
     
             #Create a table with the weighted average of each profile
-            depthdf =   df1.groupby('profilegroup', as_index=False)['thetweight'].sum()
-            temp= df1.groupby('profilegroup', as_index=False)['Wd'].sum()
+            depthdf =   df1.groupby('PROFILE', as_index=False)['thetweight'].sum()
+            temp= df1.groupby('PROFILE', as_index=False)['Wd'].sum()
             depthdf['Wd_tot'] = temp['Wd']
             depthdf['Profile_SWV_AVG'] = depthdf['thetweight'] / depthdf['Wd_tot']
-            dictprof = dict(zip(df1.profilegroup, df1.LOC_rad))
-            dictprof2 = dict(zip(df1.profilegroup, df1.rscale))
-            depthdf['Radius'] = depthdf['profilegroup'].map(dictprof)
-            depthdf['rscale'] = depthdf['profilegroup'].map(dictprof2)
+            dictprof = dict(zip(df1.PROFILE, df1.LOC_rad))
+            dictprof2 = dict(zip(df1.PROFILE, df1.rscale))
+            depthdf['Radius'] = depthdf['PROFILE'].map(dictprof)
+            depthdf['rscale'] = depthdf['PROFILE'].map(dictprof2)
             """
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             ~~~~~~~~~~~~~~ ABSOLUTE HUMIDITY CALULCATION ~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -180,7 +180,7 @@ def dl_land_cover():
     print("Done")
 
     
-def meta_find_lc(lat, lon):
+def find_lc(lat, lon):
     landdat = smoon.getlistoffiles(nld['defaultdir'] + "/data/land_cover_data/")
     
     #Open file
@@ -196,3 +196,129 @@ def meta_find_lc(lat, lon):
     tmp2 = tmp.lccs_class.sel(lat=lat, lon=lon, method='nearest').values[0]
     lc = ludict[tmp2]
     return lc
+
+
+#!!!
+def fill_meta_data():
+    
+    meta = pd.read_csv(nld['defaultdir'] + "/data/meta_data.csv")
+    meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Add leading zeros
+    
+    
+    for i in range(len(meta['LATITUDE'])):
+        print(i)
+        
+        try:
+            lat = meta['LATITUDE'][i]
+            lon = meta['LONGITUDE'][i]
+            
+            
+            resdict = smoon.isric_variables(lat, lon)
+            wrb = smoon.isric_wrb_class(lat, lon)
+            
+                    #Bulk Density
+            bdod = smoon.isric_depth_mean(resdict, 0)
+            bdod = bdod/100 # convert to decimal fraction
+            bdoduc = smoon.isric_depth_uc(resdict, 0)
+            bdoduc = bdoduc/100
+            
+            #Cation Exchange Capacity
+            cec = smoon.isric_depth_mean(resdict, 1)
+            cecuc = smoon.isric_depth_uc(resdict, 1)
+        
+            # Coarse Fragment Volume
+            cfvo = smoon.isric_depth_mean(resdict, 2)
+            cfvo = cfvo/10 # convert to decimal fraction
+            cfvouc = smoon.isric_depth_uc(resdict, 2)
+            cfvouc = cfvouc/10
+        
+            # Clay as prcnt
+            clay = smoon.isric_depth_mean(resdict, 3)
+            clay = clay/1000 # convert to decimal fraction
+            clayuc = smoon.isric_depth_uc(resdict, 3)
+            clayuc = clayuc/1000
+        
+            # Nitrogen
+            nitro = smoon.isric_depth_mean(resdict, 4)
+            nitro = nitro/100 # convert to g/kg
+            nitrouc = smoon.isric_depth_uc(resdict, 4)
+            nitrouc = nitrouc/100
+        
+            #OCD CURRENTLY DATA APPEARS TO ALWAYS BE NONETYPE - REMOVED
+           # ocd = smoon.isric_depth_mean(resdict, 5)
+           # ocd = ocd/1000 # convert to kg/dm**3
+           # ocduc = smoon.isric_depth_uc(resdict, 5)
+           # ocduc = ocduc/1000
+        
+            #phh20
+            phh20 = smoon.isric_depth_mean(resdict, 6)
+            phh20 = phh20/10 # convert to pH
+            phh20uc = smoon.isric_depth_uc(resdict, 6)
+            phh20uc = phh20uc/10
+        
+            #Sand
+            sand = smoon.isric_depth_mean(resdict, 7)
+            sand = sand/1000 # convert to decimal fraction
+            sanduc = smoon.isric_depth_uc(resdict, 7)
+            sanduc = sanduc/1000
+        
+            #Silt
+            silt = smoon.isric_depth_mean(resdict, 8)
+            silt = silt/1000 # convert to decimal fraction
+            siltuc = smoon.isric_depth_uc(resdict, 8)
+            siltuc = siltuc/1000    
+            
+            #SOC
+            soc  = smoon.isric_depth_mean(resdict, 9)
+            soc = soc/1000 # convert to decimal fraction
+            socuc = smoon.isric_depth_uc(resdict, 9)
+            socuc = socuc/1000
+            
+            meta.at[i, 'BD_ISRIC'] = bdod
+            meta.at[i, 'BD_ISRIC_UC'] = bdoduc
+            
+            meta.at[i, 'SOC_ISRIC'] = soc
+            meta.at[i, 'SOC_ISRIC_UC'] = socuc
+            
+            meta.at[i, 'pH_H20_ISRIC'] = phh20
+            meta.at[i, 'pH_H20_ISRIC_UC'] = phh20uc
+            
+            meta.at[i, 'CEC_ISRIC'] = cec
+            meta.at[i, 'CEC_ISRIC_UC'] = cecuc
+            
+            meta.at[i, 'CFVO_ISRIC'] = cfvo
+            meta.at[i, 'CFVO_ISRIC_UC'] = cfvouc
+            
+            meta.at[i, 'NITROGEN_ISRIC'] = nitro
+            meta.at[i, 'NITROGEN_ISRIC_UC'] = nitrouc
+            
+            meta.at[i, 'SAND_ISRIC'] = sand
+            meta.at[i, 'SAND_ISRIC_UC'] = sanduc
+            
+            meta.at[i, 'SILT_ISRIC'] = silt
+            meta.at[i, 'SILT_ISRIC_UC'] = siltuc
+            
+            meta.at[i, 'CLAY_ISRIC'] = clay
+            meta.at[i, 'CLAY_ISRIC_UC'] = clayuc
+            
+            meta.at[i, 'WRB_ISRIC'] = wrb
+            meta.at[i, 'TEXTURE'] = smoon.soil_texture(sand, silt, clay)
+            
+            #ADD LAND COVER
+            lc = smoon.find_lc(lat, lon)
+            meta.at[i, 'LAND_COVER'] = lc
+        except:
+            pass
+        
+
+
+
+    print("Calculate Beta Coeff...")
+
+    meta['BETA_COEFF'], meta['REFERENCE_PRESS'] = smoon.betacoeff(meta['MEAN_PRESS'], meta['LATITUDE'],
+        meta['ELEV'], meta['GV'])
+
+    return meta
+        
+meta.to_csv(nld['defaultdir']+"/data/meta_data.csv", header=True, index=False, mode="w") #write to csv
+    

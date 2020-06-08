@@ -102,7 +102,7 @@ def initial():
         print("Folder already exists, skipping.")
         pass
 		
-   try:
+    try:
         os.mkdir(nld['defaultdir']+"/data/land_cover_data")
     except:
         print("Folder already exists, skipping.")

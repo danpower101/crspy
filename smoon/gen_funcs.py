@@ -12,6 +12,9 @@ A collection of functions used in the processing of the data
 """
 import datetime
 import os
+import re
+import pandas as pd
+from name_list import nld
 
 def datechange (year, yday):
     """datechange func takes as arguments year and yday and converts it into a
@@ -39,3 +42,41 @@ def getlistoffiles(dirName):
             allFiles.append(fullPath)
                 
     return allFiles
+
+def flipif(filename):
+    """
+    Feed in filename as a string that contains hydroinnova data. Checks to see
+    if time is earliest first or latest first and will convert if needed such
+    that:
+        time[0] == earliest date
+        time[end] == latest date
+    
+    Writes out to original file location.
+    """
+    m = re.search('/crns_data/raw/(.+?)_', filename) #  (.+?) here is the string being extracted between the series
+    if m:
+        country = m.group(1)
+    m2 = re.search('SITE_(.+?).txt',filename)
+    if m2:
+        sitenum = m2.group(1)
+      
+    tmp = pd.read_csv(nld['defaultdir'] + "/data/crns_data/raw/"+country+"_SITE_" + sitenum+".txt", sep="\s+")
+    
+    if tmp['TIME'].iloc[0] > tmp['TIME'].iloc[-1]:
+        tmp = tmp.iloc[::-1]
+        tmp = tmp[~tmp.TIME.str.contains("2009")] # remove data from 2009
+        tmp.to_csv(nld['defaultdir'] + "/data/crns_data/raw/"+country+"_SITE_" + sitenum+".txt", header=True, index=False, sep="\t",  mode='w')
+    else:
+        pass
+
+def flipall(listfiles):
+    """
+    Iterate flipping function through the list of files
+    """
+    for i in range(len(listfiles)):
+        print(i) # Add to see where error occurs if encountered
+        filename = listfiles[i]
+        flipif(filename)
+
+#listfiles = getlistoffiles(nld['defaultdir'] + "/data/crns_data/raw/")
+#flipall(listfiles)  
