@@ -20,7 +20,7 @@ import itertools
 import pandas as pd
 
 
-def era5landdl(area, years, months, variables):
+def era5landdl(area, years, months, variables, savename):
     """
     Function to automate download of ERA5_Land data. See readme for instructions
     on preparing the computer log in to era5 land system, necessary to run this code.
@@ -41,11 +41,14 @@ def era5landdl(area, years, months, variables):
                         'volumetric_soil_water_layer_1', 'volumetric_soil_water_layer_2', 'volumetric_soil_water_layer_3',
                         'volumetric_soil_water_layer_4','2m_dewpoint_temperature','snow_depth_water_equivalent'
                         ]
+                
+        savename = string to identify the area being downloaded
+                e.g. "USA_Sites"
         
     """
     for year in years:
         for month in months:
-            slocation = nld['defaultdir']+"/data/era5land/era5land_"+str(year)+"_month"+str(month)+".nc"
+            slocation = nld['defaultdir']+"/data/era5land/store/"+savename+"_"+str(year)+"_month"+str(month)+".nc"
             c = cdsapi.Client()
             c.retrieve(
                 'reanalysis-era5-land',
@@ -83,7 +86,7 @@ def era5landdl(area, years, months, variables):
                 slocation)
             
     
-def era5landnetcdf(years, months, tol, savename):
+def era5landnetcdf(years, months, tol, loadname, savename, ogfile):
     """
     Takes individual era5land files from websiteand extracts the required grids.
     It then combines them into a single netcdf file with dimensions date and site.
@@ -96,11 +99,20 @@ def era5landnetcdf(years, months, tol, savename):
         
         months = list of months which should match data that has been downloaded
         
-        tol = tolerance (degrees) on finding nearest grid to sit location
+        tol = tolerance (degrees) on finding nearest grid to site location
             e.g. 0.1 is recommended as this is the resolution of ERA5_Land data
+        
+        loadname = string for the name used in the era5landdl function (savename)
+            e.g. 
         
         savename = string for the output filename wanted
             e.g. "COSMOS_ERA5_data"
+        
+        ogfile = string location of the original netcdf file (if available). If not 
+                available it will make a new one, if it is available it will concat
+                data to this file. 
+                If none available string should be "None"
+            e.g. nld['defaultdir']+"/data/era5_land/era5land_all_sites.nc" or "None"
     
     """
     meta = pd.read_csv(nld['defaultdir']+"/data/meta_data.csv")
@@ -109,18 +121,30 @@ def era5landnetcdf(years, months, tol, savename):
     
     # Create placeholder
     ds_1 = xr.Dataset()
-    era5_all = xr.Dataset()
+    if ogfile == "None":
+        era5_all = xr.Dataset()
+    else:
+        era5_all = xr.open_dataset(ogfile)
+    
     #take from metadata
     for year in years:
         for month in months:
-            ncfile = nld['defaultdir']+"/data/era5land/era5land_"+str(year)+"_month_"+str(month)+".nc"
+            ncfile = nld['defaultdir']+"/data/era5land/store/"+loadname+"_"+str(year)+"_month"+str(month)+".nc"
+            print("Extracting data from "+ncfile)
             with xr.open_dataset(ncfile) as ds:
-                timearray = list(ds.time.values)   #Extract the times         
+                timearray = list(ds.time.values)   #Extract the times
+                
+                """
+                Trial and error method. Go through the meta_data, extract lat lon,
+                extract site name and code, then attempt to find the data within the 
+                defined tolerance from the data in the store folder.
+                If not found will move onto the next.
+                """
+                
                 for i in range(len(meta)):
-                    print(i) 
                     # Assign values of sitename, and location of site.
-                    lon = meta.loc[i,"LOC_LON"]
-                    lat = meta.loc[i, "LOC_LAT"]
+                    lon = meta.loc[i,"LONGITUDE"]
+                    lat = meta.loc[i, "LATITUDE"]
                     sitename = meta['COUNTRY'][i]+"_SITE_"+meta['SITENUM'][i]                    
                     timearray = list(ds.time.values)
                     sitelist = list(itertools.repeat(sitename, len(timearray)))                  
@@ -162,7 +186,8 @@ def era5landnetcdf(years, months, tol, savename):
                                                    "snow_water_equiv": snowequiv_da})
                         
                         ds_1 = ds_1.combine_first(dstemp)
+                        print("Writing "+sitename)
                     except:
                         pass
                 era5_all = xr.merge([era5_all, ds_1])
-                era5_all.to_netcdf(savename+'.nc') # Save each iteration incase of crash!
+                era5_all.to_netcdf(nld['defaultdir']+"/data/era5land/"+savename+'.nc') # Save each iteration incase of crash!

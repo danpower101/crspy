@@ -14,6 +14,8 @@ import cdsapi
 import os
 os.chdir(nld['defaultdir'])
 import zipfile
+import urllib
+from bs4 import BeautifulSoup
 
 def isric_variables(lat, lon):
     """
@@ -198,8 +200,24 @@ def find_lc(lat, lon):
     return lc
 
 
-#!!!
+#!!! Change to take meta as argument
 def fill_meta_data():
+    
+    """
+    Reads in meta_data table, uses the latitude and longitude of each site to find
+    metadata from the ISRIC soil database, as well as calculating reference pressure
+    and beta coefficient.
+    
+    REQUIRED COLUMNS IN META_DATA:
+        LATITUDE: latitude in degrees
+            e.g. 51
+        LONGITUDE: longitude in degrees
+            e.g. 51.1
+        ELEV: elevation of site in metres
+            e.g. 201
+        GV: cutoff rigidity of site (can be obtained at http://crnslab.org/util/rigidity.php )
+            e.g. 2.2
+    """
     
     meta = pd.read_csv(nld['defaultdir'] + "/data/meta_data.csv")
     meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Add leading zeros
@@ -315,10 +333,54 @@ def fill_meta_data():
 
     print("Calculate Beta Coeff...")
 
-    meta['BETA_COEFF'], meta['REFERENCE_PRESS'] = smoon.betacoeff(meta['MEAN_PRESS'], meta['LATITUDE'],
+    meta['BETA_COEFF'], meta['REFERENCE_PRESS'] = smoon.betacoeff(meta['LATITUDE'],
         meta['ELEV'], meta['GV'])
-
-    return meta
-        
-meta.to_csv(nld['defaultdir']+"/data/meta_data.csv", header=True, index=False, mode="w") #write to csv
     
+    meta.to_csv(nld['defaultdir'] + "/data/meta_data.csv", header=True, index=False, mode='w')
+    
+    return meta
+
+
+def nmdb_get(startdate, enddate):
+    """
+    Will collect data for Junfraujoch station that is required to calculate fsol.
+    Returns a dictionary that can be used to fill in values to the main dataframe
+    of each site.
+    
+    Parameters:
+        startdate = date of the format YYYY-mm-dd
+            e.g 2015-10-01
+        enddate = date of the format YYYY-mm-dd
+            e.g. 2016-10-01
+    """
+    #split for use in url
+    sy,sm,sd = str(startdate).split("-")
+    ey,em,ed = str(enddate).split("-")
+    
+    #Collect html from request and extract table and write to dict
+    url = "http://nest.nmdb.eu/draw_graph.php?formchk=1&stations[]=JUNG&tabchoice=1h&dtype=corr_for_efficiency&tresolution=0&yunits=0&date_choice=bydate&start_day={sd}&start_month={sm}&start_year={sy}&start_hour=0&start_min=0&end_day={ed}&end_month={em}&end_year={ey}&end_hour=23&end_min=59&output=ascii"
+    url = url.format(sd=sd, sm=sm, sy=sy, ed=ed, em=em, ey=ey)
+    response = urllib.request.urlopen(url)
+    html = response.read()
+    soup = BeautifulSoup(html, features="lxml")
+    pre = soup.find_all('pre')
+    pre = pre[0].text
+    pre = pre[pre.find('start_date_time'):]
+    pre = pre.replace("start_date_time   1HCOR_E", "")
+    f = open(nld['defaultdir']+"data/nmdb/tmp.txt", "w")
+    f.write(pre)
+    f.close()
+    df = open(nld['defaultdir']+"data/nmdb/tmp.txt", "r")
+    lines = df.readlines()
+    df.close()
+    lines = lines[1:]
+    dfneut = pd.DataFrame(lines)
+    dfneut = dfneut[0].str.split(";", n = 2, expand = True) 
+    cols = ['DATE', 'COUNT']
+    dfneut.columns = cols
+    dates = pd.to_datetime(dfneut['DATE'])
+    count = dfneut['COUNT']
+    
+    dfdict = dict(zip(dates, count))
+    
+    return dfdict

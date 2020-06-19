@@ -22,7 +22,13 @@ Used in the calculation of pressure corrections:
 pv0 = reference pressure (hPa)
 """
 pv0=0
-
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+                                # Jungfraujoch reference
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+"""
+Reference value for Jungfraujoch - default is 159 from 1st May 2011
+"""
+jung_ref = 159
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
                                 # N0 calibration
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -100,5 +106,7 @@ nld = {
        "timestepdiff":timestepdiff,
        "density":density,
        "noval":noval,
-       "pv0":pv0
+       "pv0":pv0,
+	   "era5_filename":era5_filename,
+       "jung_ref":jung_ref
        }

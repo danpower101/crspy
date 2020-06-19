@@ -13,12 +13,11 @@ Reference Pressure Calc (x0) from:
 """
 import numpy as np
 
-def betacoeff(p, lat, elev, r_c):
+def betacoeff(lat, elev, r_c):
     """
     This will calculate the beta coefficient for each site. 
     
     Parameters:
-        p = site average pressure (mb)
         lat = latitude (degrees)
         elev = site elevation (m)
         r_c = cutoff ridgitity (gv)
@@ -33,7 +32,7 @@ def betacoeff(p, lat, elev, r_c):
     x0 = (101325*(1-2.25577*(10**-5)*elev)**5.25588)/100 # output in mb
     
     # variables
-    z = -0.00000448211*p**3 + 0.0160234*p**2 - 27.0977*p+15666.1  
+    z = -0.00000448211*x0**3 + 0.0160234*x0**2 - 27.0977*x0+15666.1  
     
     # latitude correction
     g_lat = 978032.7*(1 + 0.0053024*(np.sin(np.radians(lat))**2)-0.0000058*(np.sin(np.radians(2*lat)))**2) 
@@ -48,7 +47,7 @@ def betacoeff(p, lat, elev, r_c):
     
     # final gravity and depth
     g = g_corr/10
-    x = p/g
+    x = x0/g
     
     # --- elevation scaling ---
     

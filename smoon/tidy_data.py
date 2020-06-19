@@ -14,12 +14,12 @@ from name_list import nld
 import os
 os.chdir(nld['defaultdir'])
 import pandas as pd # Pandas for dataframe
+import numpy as np
 import re
 import smoon
 import datetime
 import xarray as xr
 import pylab
-import sys
 pylab.show()
 
 ###############################################################################
@@ -67,6 +67,15 @@ def prepare_data(fileloc):
     
     # Read in files and sort time and date columns
     df = pd.read_csv(nld['defaultdir'] + "/data/crns_data/raw/"+country+"_SITE_" + sitenum+".txt", sep="\t")
+    
+    
+    # Remove leading white space - present in some SD card data
+    df['TIME'] = df['TIME'].str.lstrip()
+    #Ensure using dashes as Excel tends to convert to /s
+    if '/' in df['TIME'][0]:
+        df['TIME'] = df['TIME'].str.replace('/', '-')
+    else:
+        pass
     tmp = df['TIME'].str.split(" ", n=1, expand=True)
     df['DATE'] = tmp[0]
     df['TIME'] = tmp[1]
@@ -82,29 +91,10 @@ def prepare_data(fileloc):
         
     df['DT'] = tseries      # replace DT with tseries which now has time as well
     
-    ###############################################################################
-    #                        Beta Coefficient                                     #
-    ###############################################################################
-    print("Calculate Beta Coeff...")
-    
-    #!!!TEMP fix below - potentially remove MEAN_PRESS all together as the output refpress
-    # is essentially the same concept. Calculated though.
-    elev = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "ELEV"].item()
-    try:
-        avgp = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "MEAN_PRESS"].item()
-    except:
-        avgp = (101325*(1-2.25577*(10**-5)*elev)**5.25588)/100
-    #########
-    
-    
-    lat = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "LATITUDE"].item()
-    lon = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "LONGITUDE"].item()
-    r_c = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "GV"].item()
-    beta, refpress = smoon.betacoeff(avgp, lat, elev, r_c)
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'BETA_COEFF'] = abs(beta)
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'REFERENCE_PRESS'] = refpress
-    meta.to_csv(nld['defaultdir']+"/data/meta_data.csv", header=True, index=False, mode="w") #write to csv
-    print("Done")
+    # Collect dates here to prevent issues with nan values after mastertime - for use in Jungrafujoch process
+    startdate = str(df['DATE'].iloc[0])
+    enddate = str(df['DATE'].iloc[-1])
+
     ###############################################################################
     #                        The Master Time                                      #
     ###############################################################################
@@ -115,8 +105,10 @@ def prepare_data(fileloc):
     
     DateTime is standardised to be on the hour (using floor). This can create issues
     with "duplicated" data points, usually when errors in logging have created data
-    every half hour instead of every hour, for example. The best way to address this 
-    currently is to retain the first instance of the duplicate and discard the second.
+    every half hour instead of every hour, for example. 
+    
+    The best way to address this currently is to retain the first instance of the 
+    duplicate and discard the second.
     """
     print("Master Time process...")
     df['DT'] = df.DT.dt.floor(freq = 'H')
@@ -136,6 +128,10 @@ def prepare_data(fileloc):
     ###############################################################################    
     """
     Read in netcdfs in a loop - attaching data for each variable to df. 
+    
+    For temperature and rain it will check to see if they are missing (i.e. all values
+    are -999). If this is true it will use ERA5_Land data to fill in - if it is false it will use
+    local data.
     """
     print("Collecting ERA-5 Land variables...")
     try:
@@ -154,151 +150,56 @@ def prepare_data(fileloc):
             df['TEMP'] = df['DT'].map(temp_dict)
             meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'TEM_DATA_SOURCE'] = 'ERA5_Land'
         else:
-            pass
+            df['TEMP'] = df['E_TEM']
+            meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'TEM_DATA_SOURCE'] = 'Local'
         
         if df.RAIN.mean() == -999:
             df['RAIN'] = df['DT'].map(prcp_dict)
             meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'RAIN_DATA_SOURCE'] = 'ERA5_Land'
         else:
-            print ('You now need to fix RAIN issue. Line 136')
-            sys.exit()
+            meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'RAIN_DATA_SOURCE'] = 'Local'
+            
+        if df.E_RH.mean() == -999:
+            rh = False
+            meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'RH_DATA_SOURCE'] = 'None'
+        else:
+            meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'RH_DATA_SOURCE'] = 'Local'
+            rh = True
+            
+            
         
         df['DEWPOINT_TEMP'] = df['DT'].map(dptemp_dict)   
         df['SWE'] = df['DT'].map(swe_dict)
         df['ERA5L_PRESS'] = df['DT'].map(press_dict)
     
-        # PRESS2 is more accurate pressure gauge - use if available
+        # PRESS2 is more accurate pressure gauge - use if available and if not fill in with PRESS1
         df['PRESS'] = df['PRESS2']
         df.loc[df['PRESS'] == -999, 'PRESS'] = df['PRESS1']
-    
-        df['VP'] = df.apply(lambda row: smoon.dew2vap(row['DEWPOINT_TEMP']), axis=1) # VP is in kPA
-        df['VP'] = df['VP']*1000 # Convert to Pascals
+        df = df.replace(-999, np.nan)
+        
+        if rh == False:
+            df['VP'] = df.apply(lambda row: smoon.dew2vap(row['DEWPOINT_TEMP']), axis=1) # VP is in kPA
+            df['VP'] = df['VP']*1000 # Convert to Pascals
+        else:
+            df['es'] = df.apply(lambda row: smoon.es(row['TEMP']), axis=1) # Output is in hectopascals
+            df['es'] = df['es']*100  # Convert to Pascals
+            df['VP'] = df.apply(lambda row: smoon.ea(row['es'], row['E_RH']), axis=1)
+            
+            
         print("Done")
     except:
         print("Cannot load era5_land data. Please download data as it is needed.")
 
-    
     ###############################################################################
-    #                         Collect meta_data                                   #
-    ###############################################################################     
-    print("Collecting additional meta data for site...")
-    #Collect variables from ISRIC API for the relevant 250m grid
-    resdict = smoon.isric_variables(lat, lon)
-    wrb = smoon.isric_wrb_class(lat, lon)
+    #                         Jungfraujoch data                                   #
+    ###############################################################################
+    print("Getting Jungfraujoch counts...")
+   
     
-    """
-    Each variable will be coded like below with mapped units as below:
-    0=bdod  - bulk density - (cg/cm**3)
-    1=cec - cation exchange capacity - (mmol(c))
-    2=cfvo - coarse fragment volume - (cm**3/dm**3)
-    3=clay (g/kg)
-    4=nitrogen (cg/kg)
-    5=ocd - organic carbon density - (kg/dm**3)
-    6=phh20 -pH of Water - (pHx10)
-    7=sand (g/kg)
-    8=silt  (g/kg)
-    9=soc - soil organic carbon (dg/kg)
-    """
-    #Bulk Density
-    bdod = smoon.isric_depth_mean(resdict, 0)
-    bdod = bdod/100 # convert to decimal fraction
-    bdoduc = smoon.isric_depth_uc(resdict, 0)
-    bdoduc = bdoduc/100
-    
-    #Cation Exchange Capacity
-    cec = smoon.isric_depth_mean(resdict, 1)
-    cecuc = smoon.isric_depth_uc(resdict, 1)
-
-    # Coarse Fragment Volume
-    cfvo = smoon.isric_depth_mean(resdict, 2)
-    cfvo = cfvo/10 # convert to decimal fraction
-    cfvouc = smoon.isric_depth_uc(resdict, 2)
-    cfvouc = cfvouc/10
-
-    # Clay as prcnt
-    clay = smoon.isric_depth_mean(resdict, 3)
-    clay = clay/1000 # convert to decimal fraction
-    clayuc = smoon.isric_depth_uc(resdict, 3)
-    clayuc = clayuc/1000
-
-    # Nitrogen
-    nitro = smoon.isric_depth_mean(resdict, 4)
-    nitro = nitro/100 # convert to g/kg
-    nitrouc = smoon.isric_depth_uc(resdict, 4)
-    nitrouc = nitrouc/100
-
-    #OCD CURRENTLY DATA APPEARS TO ALWAYS BE NONETYPE - REMOVED
-   # ocd = smoon.isric_depth_mean(resdict, 5)
-   # ocd = ocd/1000 # convert to kg/dm**3
-   # ocduc = smoon.isric_depth_uc(resdict, 5)
-   # ocduc = ocduc/1000
-
-    #phh20
-    phh20 = smoon.isric_depth_mean(resdict, 6)
-    phh20 = phh20/10 # convert to pH
-    phh20uc = smoon.isric_depth_uc(resdict, 6)
-    phh20uc = phh20uc/10
-
-    #Sand
-    sand = smoon.isric_depth_mean(resdict, 7)
-    sand = sand/1000 # convert to decimal fraction
-    sanduc = smoon.isric_depth_uc(resdict, 7)
-    sanduc = sanduc/1000
-
-    #Silt
-    silt = smoon.isric_depth_mean(resdict, 8)
-    silt = silt/1000 # convert to decimal fraction
-    siltuc = smoon.isric_depth_uc(resdict, 8)
-    siltuc = siltuc/1000    
-    
-    #SOC
-    soc  = smoon.isric_depth_mean(resdict, 9)
-    soc = soc/1000 # convert to decimal fraction
-    socuc = smoon.isric_depth_uc(resdict, 9)
-    socuc = socuc/1000   
-    
-    
-    
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'BD_ISRIC'] = bdod
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'BD_ISRIC_UC'] = bdoduc
-    
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'SOC_ISRIC'] = soc
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'SOC_ISRIC_UC'] = socuc
-    
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'pH_H20_ISRIC'] = phh20
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'pH_H20_ISRIC_UC'] = phh20uc
-    
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'CEC_ISRIC'] = cec
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'CEC_ISRIC_UC'] = cecuc    
-    
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'CFVO_ISRIC'] = cfvo
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'CFVO_ISRIC_UC'] = cfvouc    
-    
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'NITROGEN_ISRIC'] = nitro
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'NITROGEN_ISRIC_UC'] = nitrouc
-
-    #meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'OCD_ISRIC'] = ocd
-    #meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'OCD_ISRIC_UC'] = ocduc
-    
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'SAND_ISRIC'] = sand
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'SAND_ISRIC_UC'] = sanduc
-
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'SILT_ISRIC'] = silt
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'SILT_ISRIC_UC'] = siltuc
-    
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'CLAY_ISRIC'] = clay
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'CLAY_ISRIC_UC'] = clayuc
-    
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'TEXTURE'] = smoon.soil_texture(sand, silt, clay)    
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'WRB_ISRIC'] = wrb
-    
+    nmdbdict = smoon.nmdb_get(startdate, enddate)
+    df['JUNG_COUNT'] = df['DT'].map(nmdbdict)
+    df['JUNG_COUNT'] = df['JUNG_COUNT'].astype(float)
     print("Done")
-    
-    ################### Collect land data ########################
-    
-    lc = smoon.find_lc(lat, lon)
-    meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'LAND_COVER'] = lc
-    
     ###############################################################################
     #                            The Final Table                                  #
     #                                                                             #
@@ -308,7 +209,7 @@ def prepare_data(fileloc):
     # REMINDER - remove 2019 dates as no DAYMET data
     
     df = df.reindex( columns = ['DT','MOD','UNMOD','PRESS','I_TEM','I_RH','E_TEM',
-                                      'E_RH','BATT','TEMP','RAIN', 'DEWPOINT_TEMP','VP','SWE','fsol',
+                                      'E_RH', 'BATT','TEMP','RAIN', 'DEWPOINT_TEMP','VP','SWE','fsol',
                                       'JUNG_COUNT','fbar','VWC1','VWC2','VWC3', 'ERA5L_PRESS'])
     
     df = df[['DT','MOD','UNMOD','PRESS','I_TEM','I_RH','E_TEM','E_RH','BATT','TEMP',
@@ -318,6 +219,8 @@ def prepare_data(fileloc):
     # Add list of columns that some sites wont have data on - removes them if empty
     df = dropemptycols(['VWC1', 'VWC2', 'VWC3', 'E_TEM', 'E_RH'], df)
     df = df.round(3)
+    df = df.replace(np.nan, nld['noval'])
+    df['MOD'] = df['MOD'].replace(0, nld['noval']) # SD card data had some 0 values - should be nan
     #Change Order 
 
     meta.to_csv(nld['defaultdir'] + "/data/meta_data.csv", header=True, index=False, mode='w')

@@ -95,7 +95,7 @@ def thetaprocess(df, meta, country, sitenum):
     df.loc[df['SM_MINUS_ERR'] > sm_max, 'SM_MINUS_ERR'] = sm_max 
     print("Done")
     
-    df['SM_TOTAL_ERR'] = df['SM_PLUS_ERR'] - df['SM_MINUS_ERR']/2 
+    df['SM_ERROR'] = (df['SM_PLUS_ERR'] - df['SM_MINUS_ERR'])/2 
     
     # Take 12 hour average
     print("Averaging and writing table...")
@@ -125,7 +125,7 @@ def thetaprocess(df, meta, country, sitenum):
     # Replace nans with -999
     df.fillna(-999, inplace=True)
     df = df.round(3)
-    df = df.drop(['rs10m', 'rs75m', 'rs150m','D86_10m', 'D86_75m', 'D86_150m'], axis=1)
+    df = df.drop(['rs10m', 'rs75m', 'rs150m','D86_10m', 'D86_75m', 'D86_150m', 'MOD_CORR_PLUS', 'MOD_CORR_MINUS', 'SM_PLUS_ERR', 'SM_MINUS_ERR'  ], axis=1)
     
     df.to_csv(nld['defaultdir'] + "/data/crns_data/FINAL/"+country+"_SITE_"+sitenum+"_final.txt",
                  header=True, index=False, sep="\t", mode="w")

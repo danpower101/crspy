@@ -41,6 +41,8 @@ def neutcoeffs(df, country, sitenum):
     meta = pd.read_csv(nld['defaultdir']+"/data/meta_data.csv")
     meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Add leading zeros
     
+    df = df.replace(nld['noval'], np.nan)
+    
     ###############################################################################
     #                    Atmospheric Water Vapour                                 #
     ###############################################################################
@@ -52,6 +54,9 @@ def neutcoeffs(df, country, sitenum):
     for tidy data. Ref pressure of PV0 is always set to 0.
     """
     # Define Constant
+    
+
+   
     df['pv'] = df.apply(lambda row: smoon.pv(row['VP'], row['TEMP']), axis=1) # VP is in Pascals and TEMP is in Cel
     df['pv'] = df['pv']*1000 # convert Kg m-3 to g m-3
     df["fawv"] = df.apply(lambda row: smoon.humfact(row['pv'], nld['pv0']), axis=1)
@@ -81,6 +86,8 @@ def neutcoeffs(df, country, sitenum):
     """
     Rc = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "GV"].item()
     RcCorrval = smoon.RcCorr(Rc)
+    df['fsol'] = df.apply(lambda row: smoon.fsol(nld['jung_ref'], row['JUNG_COUNT']), axis=1)
+    
     df['fsolGV'] = (df['fsol'] - 1) * RcCorrval + 1
     
     ###############################################################################
@@ -106,6 +113,14 @@ def neutcoeffs(df, country, sitenum):
     df['MOD_CORR'] = df['MOD'] * df['fbar'] * df['fsolGV'] * df['fawv'] * df['fagb']  
     df['MOD_CORR'] = df['MOD_CORR'].apply(np.floor)
     
+    """
+    Create a seperate correction to calibrate against. This is due to the fact that
+    biomass data is essentially static in this iteration of the tool (very hard to get
+    dynamic data). If we calibrate to mod count adjusted for agb on calibration day it 
+    will leave agb adjustment inside N0. If we were to obtain dynamic agb data for each
+    calibration date we could calibrate to this and the changing biomass would be picked 
+    up in the regular equations. 
+    """
     df['CALIBCORR'] = df['MOD'] * df['fbar'] * df['fsolGV'] * df['fawv']
     df['CALIBCORR'] = df['CALIBCORR'].apply(np.floor)
     

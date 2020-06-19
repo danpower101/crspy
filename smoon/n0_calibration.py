@@ -30,7 +30,8 @@ import smoon
 #import SMOON.neutron_correction_funcs as ncf
 
 import matplotlib.pyplot as plt
-
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning) #Brought in to stop warning around missing data
 """ 
 Functions
          
@@ -295,20 +296,39 @@ def n0_calib(meta, country, sitenum, defineaccuracy, write):
     for i in range(len(dflvl1Days)):
         tmp= pd.DataFrame.from_dict(dflvl1Days[i])
         tmp= tmp[(tmp['DT'] > str(unidate[i])+' 16:00:00') & (tmp['DT'] <= str(unidate[i])+' 23:00:00')]# COSMOS time of Calib
-        avgP[i] = float(tmp['PRESS'].mean())
+        check = float(np.nanmean(tmp['PRESS'], axis=0))
+        
+        if np.isnan(check):
+            tmp= pd.DataFrame.from_dict(dflvl1Days[i])
+            avgP[i] = float(np.nanmean(tmp['PRESS'], axis=0))
+        else:
+            avgP[i] = check
+        #Very few sites had no data at time of COSMOS calib - if thats the case use day average
+
         
     avgT = dict()
     for i in range(len(dflvl1Days)):
         tmp = pd.DataFrame.from_dict(dflvl1Days[i])
         tmp= tmp[(tmp['DT'] > str(unidate[i])+' 16:00:00') & (tmp['DT'] <= str(unidate[i])+' 23:00:00')]# COSMOS time of Calib
-        avgT[i] = float(np.nanmean(tmp['TEMP'], axis=0))
+        check = float(np.nanmean(tmp['TEMP'], axis=0))
+        #Very few sites had no data at time of COSMOS calib - if thats the case use day average
+        if np.isnan(check):
+            tmp= pd.DataFrame.from_dict(dflvl1Days[i])
+            avgT[i] = float(np.nanmean(tmp['TEMP'], axis=0))
+        else:
+            avgT[i] = check
         
     avgVP = dict()
     for i in range(len(dflvl1Days)):
         tmp = pd.DataFrame.from_dict(dflvl1Days[i])
         tmp= tmp[(tmp['DT'] > str(unidate[i])+' 16:00:00') & (tmp['DT'] <= str(unidate[i])+' 23:00:00')]# COSMOS time of Calib
-        avgVP[i] = float(np.nanmean(tmp['VP'], axis=0))
-    
+        check = float(np.nanmean(tmp['VP'], axis=0))
+        #Very few sites had no data at time of COSMOS calib - if thats the case use day average
+        if np.isnan(check):
+            tmp= pd.DataFrame.from_dict(dflvl1Days[i])
+            avgVP[i] = float(np.nanmean(tmp['VP']))    
+        else:
+            avgVP[i] = check
     print("Done")
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -456,6 +476,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy, write):
     tmp = pd.read_csv(nld['defaultdir'] +'/data/crns_data/level1/'+country + '_SITE_'+sitenum+'_LVL1.txt', sep='\t')
     tmp['DATE'] = pd.to_datetime(tmp['DT'], format="%Y-%m-%d %H:%M:%S")  #Use correct formatting - MAY NEED CHANGING AGAIN DUE TO EXCEL
     tmp['DATE'] = tmp['DATE'].dt.date  # Remove the time portion to match above
+    tmp = tmp.replace(nld['noval'], np.nan) # replace -999 with nan for easier methods
     
     NeutCount = dict() # Create a dict for appending time series readings for each calib day
     for i in range(numdays): # Create a df for each day with the CRNS readings
@@ -465,7 +486,13 @@ def n0_calib(meta, country, sitenum, defineaccuracy, write):
     for i in range(len(NeutCount)):
         tmp= pd.DataFrame.from_dict(NeutCount[i]) # Find the daily mean neutron count for each calibration day
         tmp= tmp[(tmp['DT'] > str(unidate[i])+' 16:00:00') & (tmp['DT'] <= str(unidate[i])+' 23:00:00')]# COSMOS time of Calib
-        avgN[i] = float(tmp['CALIBCORR'].mean()) # !!! change back to MODCORR - fixed but check back
+        check = float(np.nanmean(tmp['CALIBCORR'])) # !!! change back to MODCORR - fixed but check back
+       #Need another catch to stop errors with missing data
+        if np.isnan(check):
+            tmp= pd.DataFrame.from_dict(NeutCount[i]) # Find the daily mean neutron count for each calibration day
+            avgN[i] = float(np.nanmean(tmp['CALIBCORR']))
+        else:
+            avgN[i] = check
     
     RelerrDict = dict()    
     with np.errstate(divide='ignore'): # prevent divide by 0 error message
