@@ -424,11 +424,10 @@ def n0_calib(meta, country, sitenum, defineaccuracy, write):
             sensor.
             """
             # Below three lines applies WrN function based on radius of the measurement
-            # 600 is used as largest as no measurements will come from further than here (it's somewhat arbritrary)
+            depthdf.loc[depthdf['Radius'] > 50, 'Wr'] = WrB(depthdf.rscale, depthdf.day1hum, (depthdf.TAVG / 100))
+            depthdf.loc[(depthdf['Radius'] > 5) & (depthdf['Radius'] <= 50) , 'Wr'] = WrA(depthdf.rscale, depthdf.day1hum, (depthdf.TAVG / 100))
             depthdf.loc[depthdf['Radius'] <= 5, 'Wr'] = WrX(depthdf.rscale, depthdf.day1hum, (depthdf.TAVG / 100))
-            depthdf.loc[depthdf['Radius'] <= 50, 'Wr'] = WrA(depthdf.rscale, depthdf.day1hum, (depthdf.TAVG / 100))
-            depthdf.loc[depthdf['Radius'] <= 600, 'Wr'] = WrB(depthdf.rscale, depthdf.day1hum, (depthdf.TAVG / 100))
-    
+            
             depthdf['RadWeight'] = depthdf['Profile_SWV_AVG'] * depthdf['Wr']
     
             FinalTheta = depthdf.sum()
@@ -586,7 +585,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy, write):
         R2 = "The bulk density was " +str(bd)
     else:
         R2 = "The bulk density value wasn't available and so estimate of 1.43 was used"
-    R3 = "The vegetation height was " +str(Hveg)+ " (m)"
+   # R3 = "The vegetation height was " +str(Hveg)+ " (m)"
     R4 = "The user defined accuracy was "+str(defineaccuracy)
     R5 = "The soil organic carbon was "+str(soc)+ " g/m^3"
     R6 = "The lattice water content was " + str(lw)
@@ -599,7 +598,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy, write):
     
     # Write the user report file below
     f = open(country +"_"+sitenum+"_Report.txt", "w")
-    f.write(N0R + '\n\n' + R1 + '\n' + R2 + '\n' + R3 + '\n' + R4 + '\n' + R5 + '\n' + R6 + '\n' + 
+    f.write(N0R + '\n\n' + R1 + '\n' + R2 + '\n' +  R4 + '\n' + R5 + '\n' + R6 + '\n' + 
             '\n \n' + R7 +'\n\n' + RAvg + '\n \n' +R8)
     f.close()
     

@@ -39,7 +39,7 @@ def neutcoeffs(df, country, sitenum):
     print ("~~~~~~~~~~~~~ Calculate Neutron Correction Factors ~~~~~~~~~~~~~")
     # Read in meta fresh
     meta = pd.read_csv(nld['defaultdir']+"/data/meta_data.csv")
-    meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Add leading zeros
+    meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Ensure its three digits
     
     df = df.replace(nld['noval'], np.nan)
     
@@ -55,8 +55,6 @@ def neutcoeffs(df, country, sitenum):
     """
     # Define Constant
     
-
-   
     df['pv'] = df.apply(lambda row: smoon.pv(row['VP'], row['TEMP']), axis=1) # VP is in Pascals and TEMP is in Cel
     df['pv'] = df['pv']*1000 # convert Kg m-3 to g m-3
     df["fawv"] = df.apply(lambda row: smoon.humfact(row['pv'], nld['pv0']), axis=1)
