@@ -17,9 +17,9 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='SMOON',  # Required
+    name='crspy',  # Required
     version='0.1.0',  # Required
-    description='Toolbox for calibration and correction of Cosmic Ray Neutron Sensor data',  # Optional
+    description='Toolbox for calibration and correction of Cosmic Ray Neutron Sensor data using globally available data sources',  # Optional
     long_description=long_description,  # Optional
     long_description_content_type='text/markdown',  # Optional (see note above)
     url='www.thedanpower.com',  # Optional
@@ -35,6 +35,7 @@ setup(
         "cdsapi>=0.2.7",
         "xarray>=0.15.1",
         "scipy>=1.3.1",
-        "netCDF4>=1.5.3"		
+        "netCDF4>=1.5.3",
+        "beautifulsoup4>=4.8.2"
     ],
 )
