@@ -34,7 +34,17 @@ import pandas as pd # Pandas for dataframe
 import numpy as np
 import crspy
 
-def neutcoeffs(df, country, sitenum):    
+def neutcoeffs(df, country, sitenum):
+    """
+    Provides the correction factors for the time series data. 
+    
+    Steps include:
+        - Calculate fawv - first calculate pv from VP and TEMP then fawv
+        - Calculate fbar - use metadata to collect betacoeff and refpres
+        - Calculate solar intensity - use ref date (01/05/2011) for Jung Count and Jungcount
+          additionally corrected with RcCorr
+        - Calculate fagb 
+    """
     
     print ("~~~~~~~~~~~~~ Calculate Neutron Correction Factors ~~~~~~~~~~~~~")
     # Read in meta fresh

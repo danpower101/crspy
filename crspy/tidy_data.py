@@ -26,23 +26,41 @@ pylab.show()
 #                       Get list of files                                     #
 ###############################################################################
 
-def dropemptycols(colstocheck, df1):
+def dropemptycols(colstocheck, df):
     
     """
     Drop any columns that are empty (i.e. all -999).
+    
+    Parameters:
+        colstocheck = string (series or single) of column title to check
+            e.g. ["VWC1", "VWC2"]
+        df = DataFrame to check
+            e.g. df
     """
     for i in range(len(colstocheck)):
         col = colstocheck[i]
-        if df1[col].mean() == -999:
-            df1 = df1.drop([col], axis=1)
+        if df[col].mean() == -999:
+            df = df.drop([col], axis=1)
         else:
             pass
-    return df1
+    return df
 
 def prepare_data(fileloc):
     """
-    Read in meta_data. Format DateTime. Check for external vars. If not availble
-    use ERA5-Land data (additional module to obtain this)
+    Provide it with the location of the raw data. If the prelimnary steps have been
+    done correctly it will prepare the data.
+    
+    Steps include: 
+        - Find the country and sitenum from text file title
+        - Fix time to be on the hour rather than variable
+        - Check what data is available - if any is missing fill with ERA5_Land data
+        - Collect Jungfraujoch neutron monitor data from NMDB.eu for the timescale here
+        - Final tidy of columns
+                    
+    
+    Parameters:
+        fileloc = string - location of the raw timeseries file
+            e.g. "~/crspy_Analysis/data/crns_data/raw/USA_SITE_105.txt"
     """
     print("~~~~~~~~~~~~~ Start TidyUp ~~~~~~~~~~~~~")
     ###############################################################################
@@ -133,6 +151,10 @@ def prepare_data(fileloc):
     are -999). If this is true it will use ERA5_Land data to fill in - if it is false it will use
     local data.
     """
+    
+    #!!! TO DO add a check here to see if we need ERA5_Land data
+    
+    
     print("Collecting ERA-5 Land variables...")
     try:
         era5 = xr.open_dataset(nld['defaultdir']+"data/era5land/"+nld['era5_filename']+".nc") #

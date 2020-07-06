@@ -86,7 +86,7 @@ def era5landdl(area, years, months, variables, savename):
                 slocation)
             
     
-def era5landnetcdf(years, months, tol, loadname, savename, ogfile):
+def era5landnetcdf(years, months, tol, loadname, savename, ogfile=None):
     """
     Takes individual era5land files from websiteand extracts the required grids.
     It then combines them into a single netcdf file with dimensions date and site.

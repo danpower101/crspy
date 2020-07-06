@@ -239,7 +239,6 @@ def n0_calib(meta, country, sitenum, defineaccuracy, write):
     handling this is converted into an average depth of the range.
     
     """
-    #!!!IF DEPTH_AVG exists skip...
     
     print("Collecting additional data...")
     

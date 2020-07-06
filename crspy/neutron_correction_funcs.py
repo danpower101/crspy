@@ -51,13 +51,13 @@ def rh(t, td):
     return 100*np.exp((17.625*243.04*(td-t))/((243.04+t)*(243.04+td)))
 
 def ea(es, RH):
-    """ Uses saturation vapour pressure (es) with relative humidity (RH) to 
-    produce vapour pressure calculation"""
+    """ Uses saturation vapour pressure (es - converted to Pascals) with relative humidity (RH) to 
+    produce actual vapour pressure (Pascals)"""
     return es * (RH/100)
 
 def dew2vap(dt):
     """
-    Provides actual vapour pressure (kPA). Taken from Shuttleworth (2012) Eq 2.21 rearranged
+    Provides vapour pressure (kPA). Taken from Shuttleworth (2012) Eq 2.21 rearranged
     """
     return np.exp((0.0707*dt-0.49299)/(1+0.00421*dt))
     

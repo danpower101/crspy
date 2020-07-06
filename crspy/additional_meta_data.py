@@ -3,6 +3,7 @@
 Created on Mon May 18 11:12:09 2020
 
 @author: Daniel Power
+@email: daniel.power@bristol.ac.uk
 """
 
 import requests
@@ -16,7 +17,6 @@ os.chdir(nld['defaultdir'])
 import zipfile
 import urllib
 from bs4 import BeautifulSoup
-import zipfile
 
 def isric_variables(lat, lon):
     """
@@ -32,8 +32,7 @@ def isric_variables(lat, lon):
     
     props = {"property":["bdod", "cec", "cfvo", "clay", "nitrogen", "ocd", "ocs", "phh2o", "sand", "silt", "soc"]}
     depths = {"depth":["0-5cm", "5-15cm", "15-30cm", "30-60cm", "60-100cm"]}
-    values = {"value":["mean", "uncertainty"]}
-    
+    values = {"value":["mean", "uncertainty"]}    
     
     reqprop = requests.get(prop_query_url,params={**siteloc, **props, **depths, **values})
     resdict = reqprop.json()
@@ -161,6 +160,7 @@ def dl_land_cover():
     Downloads the 2018 global land cover dataset from the cdsapi:
         
     """
+    print("Downloading...")
     c = cdsapi.Client()
     savezip = nld['defaultdir']+'/data/land_cover_data/land_cover.zip'
     extractzip = nld['defaultdir']+'/data/land_cover_data/'
@@ -203,6 +203,12 @@ def find_lc(lat, lon):
 
 
 ####################### AGB data ##############################################
+def dl_agb():
+    print("Downloading...")
+    urllib.request.urlretrieve("ftp://anon-ftp.ceda.ac.uk/neodc/esacci/biomass/data/agb/maps/2017/v1.0/netcdf/ESACCI-BIOMASS-L4-AGB-MERGED-100m-2017-fv1.0.nc", nld['defaultdir']+"/data/global_biomass_netcdf/ESACCI-BIOMASS-L4-AGB-MERGED-100m-2017-fv1.0.nc" )
+    print("Done")
+    return
+
 
 def get_agb(lat, lon, tol=0.001):
     ncfile = nld['defaultdir']+"/data/global_biomass_netcdf/ESACCI-BIOMASS-L4-AGB-MERGED-100m-2017-fv1.0.nc"
@@ -214,7 +220,6 @@ def get_agb(lat, lon, tol=0.001):
         
 ###################### Fill in metadata ######################################
         
-#!!! Change to take meta as argument
 def fill_meta_data(meta):
     
     """
@@ -233,7 +238,7 @@ def fill_meta_data(meta):
             e.g. 2.2
     """
     
-    meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Add leading zeros
+    meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Ensure leading zeros
     
     
     for i in range(len(meta['LATITUDE'])):
