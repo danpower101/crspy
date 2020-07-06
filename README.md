@@ -9,36 +9,53 @@ This tool can process Cosmic Ray Neutron Sensor data into soil moisture estimate
 ## Motivation
 Cosmic-Ray Neutron Sensors measure fast neutrons, which after corrections and calibration, can be used to estimate field scale soil moisture. Sensors are located around the world and have been used for upwards of ten years giving a valuable source of information for hydrologists and beyond. Important improvements have been discovered in that time but may not have been implemented on historical data. This tool is designed to allow changes in processing and calibration to be easily implemented on data from around the globe, giving a uniform method in processing soil moisture estimates. This will allow effective analysis for Hydrological applications. 
 
-## Features
-The main features are general tidying, calibration and processing of CRNS data. Improvements will include automatic figures. 
+# **Contents**
 
-- Tidy formatting of data
-- Calibration with the new methodology of Schrön et al., (2017)
-- Correction for Pressure (including mass attenuation length calc), Humidity, Solar intenisty and Above Ground Biomass.
-- Quality Analysis module that allows users to identify issues with the data
-- Output of hourly soil moisture estimates along with estimated error, running mean and savitsky-golay filtered means. 
-- (WIP) Informative figures and analysis. 
+[**About**](https://github.com/danpower101/crspy/wiki/About)
 
-## Code Example
-(Coming Soon)
+A broad description of the tool and why it was written.
 
-## Screenshots
-(Coming Soon) Include logo/demo screenshot etc. 
+[**Getting Started**](https://github.com/danpower101/crspy/wiki/Getting-Started)
 
-## Installation
-(Coming Soon)
+Begin here for a description of how to download and install crspy, as well as how to prepare your working directory.
 
-## API Reference
-(Coming Soon)
+### **Preliminary Steps**
 
-## Tests
-(Coming Soon)
+Before processing data it is required to prepare your working environment. This includes signing up to global data products, saving some settings on your computer to allow easy access to these products and downloading some datasets to your working directory. These are all described below in separate mini walkthroughs. They should be tackled in the order presented to avoid issues:
 
-## How to use?
-(Coming Soon)
+1. [**Metadata**](https://github.com/danpower101/crspy/wiki/Metadata)
+2. [**ERA5-Land Data**](https://github.com/danpower101/crspy/wiki/ERA5-Land-Data)
+3. [**Land Cover Data**](https://github.com/danpower101/crspy/wiki/Land-Cover-Data)
+4. [**Above Ground Biomass Data**](https://github.com/danpower101/crspy/wiki/Above-Ground-Biomass-Data)
+5. [**Fill metadata table**](https://github.com/danpower101/crspy/wiki/Fill-metadata-table)
+6. [**Raw Timeseries Data**](https://github.com/danpower101/crspy/wiki/Raw-Timeseries-Data)
+7. [**Calibration Data**](https://github.com/danpower101/crspy/wiki/Calibration-Data)
 
-## References and Credits
-(Coming Soon - include all academic papers and people involved)
+
+
+### **Processing the Data**
+
+Once the preliminary steps have been completed the timeseries data can be processed
+
+[**Processing Data**](tbc) 
+
+
+
+#### **What does it do?**
+
+There are a lot of steps involved in the processing of neutron data to give us our outputs. A high level description has been provided to demonstrate what steps have been taken without having to look into the code. 
+
+[**High level process description**](tbc)
+
+
+
+#### **What are the outputs?**
+
+When setting up your working directory the folder structure is written out for you. Below are descriptions of these folders as well as descriptions of the outputs that will be written during the processing steps.
+
+[**Description of folders**](tbc)
+
+[**Description of outputs**](tbc)
 
 
 
@@ -48,4 +65,3 @@ MIT © [D. Power](2020)
 
 
 <p align="center"> <img width=20% src="https://github.com/danpower101/The_CRNS_Process/blob/master/Images/University_of_Bristol_logo.png">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img width=20% src="https://github.com/danpower101/The_CRNS_Process/blob/master/Images/WISECDTlogo.png">
-
