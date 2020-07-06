@@ -1,4 +1,4 @@
-## Cosmic-Ray Neutron Sensor Processing Tool (more inventive title to come)
+## Cosmic-Ray Sensor PYthon tool (crspy)
 This tool can process Cosmic Ray Neutron Sensor data into soil moisture estimates. It is based on research conducted by many individuals and groups (see references). It is part of a PhD project at Bristol University by Daniel Power. 
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
