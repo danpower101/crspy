@@ -39,7 +39,7 @@ def flag_and_remove(df, N0, country, sitenum):
     tmpdp = df['DEWPOINT_TEMP']
     tmpswe = df['SWE']
     
-    df.reset_index(drop=True) # Reset index incase df is from another process and is DT
+    df = df.reset_index(drop=True) # Reset index incase df is from another process and is DT
     df2 = df.copy()
     df2['FLAG'] = 0 # initialise FLAG to 0
     
@@ -48,34 +48,41 @@ def flag_and_remove(df, N0, country, sitenum):
     
     df2.loc[(df2.MOD < (N0*(nld['belowN0']/100))) & (df2.MOD != nld['noval']), "FLAG"] = 2
     df = df.drop(df[df.MOD < (N0*(nld['belowN0']/100))].index) # drop below 0.3 N0
-    df = df.reset_index(drop=True)
+   # df = df.reset_index(drop=True)
     
     df2.loc[(df2.BATT < 10) & (df2.BATT != nld['noval']), "FLAG"] = 4
     df = df.drop(df[df.BATT < 10].index)
     
-    df = df.reset_index(drop=True)
+   # df = df.reset_index(drop=True)
     # Drop >20% diff in timestep
+    
     moddiff=[0]
-    for i in range(len(df.MOD)-1):
-        later = df['MOD'][i+1]
-        earlier = df['MOD'][i]
+    tmpindex = list(df.index)
+    for i in range(len(tmpindex)-1):
+        lateridx = tmpindex[i+1]
+        earlieridx = tmpindex[i]
+        later = df['MOD'][lateridx]
+        earlier = df['MOD'][earlieridx]
         currentdiff = (later - earlier)
         moddiff.append(currentdiff)
     df['DIFF'] = moddiff
     
     prcntdiff = [0]
-    for i in range(len(df.MOD)-1):
-        later = df['DIFF'][i+1]
-        earlier = df['MOD'][i]
+    for i in range(len(tmpindex)-1):
+        lateridx = tmpindex[i+1]
+        earlieridx = tmpindex[i]
+        later = df['DIFF'][lateridx]
+        earlier = df['MOD'][earlieridx]
         indvdiff = (later / earlier)*100
         prcntdiff.append(indvdiff)
     df['PRCNTDIFF'] = prcntdiff
     
+    df['INDEX_TMP'] = df.index
 
-    diff1 = np.where(df['PRCNTDIFF'] > nld['timestepdiff'])
-    diff1 = diff1[0]
-    diff2 = np.where(df.PRCNTDIFF < (-nld['timestepdiff']))
-    diff2 = diff2[0]
+    diff1 = df.loc[(df['PRCNTDIFF'] > nld['timestepdiff']), "INDEX_TMP"]
+    #diff1 = diff1[0]
+    diff2 = df.loc[(df['PRCNTDIFF'] < (-nld['timestepdiff'])), "INDEX_TMP"]
+    #diff2 = diff2[0]
     
     df2 = df2.reset_index(drop=True)
     df2.loc[diff1, "FLAG"] = 1
@@ -97,11 +104,12 @@ def flag_and_remove(df, N0, country, sitenum):
     df['FLAG'] = flagseries.values # Place flag vals back into df
     df['DT'] = df.index
     
-    df=df.drop(["DIFF","PRCNTDIFF"], axis =1)
+    df=df.drop(["DIFF","PRCNTDIFF","INDEX_TMP", "CALIBCORR"], axis =1)
     
-    df = df[['DT', 'MOD', 'UNMOD', 'PRESS', 'I_TEM', 'I_RH', 'BATT', 'TEMP', 'RAIN',
-       'VP', 'DEWPOINT_TEMP', 'SWE', 'JUNG_COUNT', 'pv', 'FLAG', 'fbar', 'fsol',
-       'fawv', 'fsolGV', 'fagb', 'MOD_CORR', 'MOD_ERR']]
+    insertat = len(df.columns)-3
+    dtcol = df['FLAG']
+    df.drop(labels=['FLAG'], axis=1,inplace = True) # Move FLAG to first col
+    df.insert(insertat, 'FLAG', dtcol)
     
     # Add the external variables back in
     
@@ -110,6 +118,8 @@ def flag_and_remove(df, N0, country, sitenum):
     df['VP'] = tmpvp
     df['DEWPOINT_TEMP'] = tmpdp
     df['SWE'] = tmpswe
+    
+    df = df.replace(np.nan, nld['noval'])    
     
     df.to_csv(nld['defaultdir'] + "/data/crns_data/FINAL/"+country+"_SITE_" + sitenum+"_final.txt",
           header=True, index=False, sep="\t", mode='w')

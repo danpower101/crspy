@@ -39,11 +39,18 @@ def dropemptycols(colstocheck, df):
     """
     for i in range(len(colstocheck)):
         col = colstocheck[i]
-        if df[col].mean() == -999:
-            df = df.drop([col], axis=1)
+        if col in df:
+            try:
+                if df[col].mean() == -999:
+                    df = df.drop([col], axis=1)
+                else:
+                    pass
+            except:
+                pass
         else:
             pass
     return df
+    
 
 def prepare_data(fileloc):
     """
@@ -130,6 +137,11 @@ def prepare_data(fileloc):
     """
     print("Master Time process...")
     df['DT'] = df.DT.dt.floor(freq = 'H')
+    dtcol = df['DT']
+    df.drop(labels=['DT'], axis=1,inplace = True) # Move DT to first col
+    df.insert(0, 'DT', dtcol)
+    
+    
     df = df.set_index(df.DT)
     df['dupes'] = df.duplicated(subset="DT")
     # Add a save for dupes here - need to test a selection of sites to see 
@@ -137,6 +149,10 @@ def prepare_data(fileloc):
     df.to_csv(nld['defaultdir'] + "/data/crns_data/dupe_check/"+country+"_SITE_" + sitenum+"_DUPES.txt",
           header=True, index=False, sep="\t",  mode='w')
     df = df.drop(df[df.dupes == True].index)
+    
+    if df.DATE.iloc[0] > df.DATE.iloc[-1]:
+        raise Exception("The dates are the wrong way around, see crspy.flipall() to fix it")   
+        
     idx = pd.date_range(df.DATE.iloc[0], df.DATE.iloc[-1], freq='1H', closed='left')
     df = df.reindex(idx, fill_value=nld['noval'])
     df['DT'] = df.index
@@ -229,17 +245,28 @@ def prepare_data(fileloc):
     ###############################################################################
     print("Writing out table...")
     # REMINDER - remove 2019 dates as no DAYMET data
+
+    def movecol(col, location):
+        """
+        Move columns to a specific position.
+        """
+        tmp = df[col]
+        df.drop(labels=[col], axis=1,inplace = True) # Move DT to first col
+        df.insert(location, col, tmp)
+   
+    # Move below columns as like them at the front
+    movecol("MOD", 1)
+    try:
+        movecol("UNMOD",2)
+    except:
+        df.insert(2,"UNMOD", np.nan) # filler for if UNMOD is unavailble
+    movecol("PRESS",3)
+    movecol("TEMP",4)
     
-    df = df.reindex( columns = ['DT','MOD','UNMOD','PRESS','I_TEM','I_RH','E_TEM',
-                                      'E_RH', 'BATT','TEMP','RAIN', 'DEWPOINT_TEMP','VP','SWE','fsol',
-                                      'JUNG_COUNT','fbar','VWC1','VWC2','VWC3', 'ERA5L_PRESS'])
-    
-    df = df[['DT','MOD','UNMOD','PRESS','I_TEM','I_RH','E_TEM','E_RH','BATT','TEMP',
-         'RAIN','VP','DEWPOINT_TEMP','SWE',
-         'JUNG_COUNT','VWC1','VWC2','VWC3','fbar', 'fsol']]
+    df.drop(labels=['TIME','PRESS1','PRESS2','DATE', 'dupes'], axis=1,inplace = True) # not required after here
     
     # Add list of columns that some sites wont have data on - removes them if empty
-    df = dropemptycols(['VWC1', 'VWC2', 'VWC3', 'E_TEM', 'E_RH'], df)
+    df = dropemptycols(df.columns.tolist(), df)
     df = df.round(3)
     df = df.replace(np.nan, nld['noval'])
     df['MOD'] = df['MOD'].replace(0, nld['noval']) # SD card data had some 0 values - should be nan

@@ -133,7 +133,7 @@ def rscaled (r, p, Hveg, y) :
 
 
 
-def n0_calib(meta, country, sitenum, defineaccuracy, write):
+def n0_calib(meta, country, sitenum, defineaccuracy):
     
     
     print("~~~~~~~~~~~~~ N0 Calibration ~~~~~~~~~~~~~" )
@@ -557,10 +557,9 @@ def n0_calib(meta, country, sitenum, defineaccuracy, write):
     N0 = minindex['N0'].item()
     
     meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'N0'] = N0
-    if write:
-        meta.to_csv(nld['defaultdir'] + "/data/meta_data.csv", header=True, index=False, mode='w')
-    else:
-        pass	
+
+    meta.to_csv(nld['defaultdir'] + "/data/meta_data.csv", header=True, index=False, mode='w')
+	
     """
                             User Report
                             
