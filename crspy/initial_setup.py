@@ -12,9 +12,6 @@ import os
 import pandas as pd
 from name_list import nld
 
-####!!!ADD GET AGB DATA HERE
-
-
 def initial(wd):
     """
     Build the file structure in the working directory.
@@ -107,6 +104,12 @@ def initial(wd):
 		
     try:
         os.mkdir(wd+"/data/land_cover_data")
+    except:
+        print("Folder already exists, skipping.")
+        pass
+    
+    try:
+        os.mkdir(wd+"/data/nmdb")
     except:
         print("Folder already exists, skipping.")
         pass

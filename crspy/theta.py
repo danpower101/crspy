@@ -45,7 +45,7 @@ def thetaprocess(df, meta, country, sitenum):
     data a minimum of 6 hours of data per 12 hour window is required, otherwise one
     missing hour could lead to large gaps in 12 hour means. 
     
-    Savitsky-Golay (SG filter) is also provided using a 12 hour window. 
+    Savitsky-Golay (SG filter) is also provided using a 12 hour window. - REMOVED FOR NOW
     """
     print("~~~~~~~~~~~~~ Estimate Soil Moisture ~~~~~~~~~~~~~")
     ###############################################################################

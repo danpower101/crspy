@@ -338,7 +338,7 @@ def fill_meta_data(meta):
             meta.at[i, 'CLAY_ISRIC_UC'] = clayuc
             
             meta.at[i, 'WRB_ISRIC'] = wrb
-            meta.at[i, 'TEXTURE'] = crspy.soil_texture(sand, silt, clay)
+            meta.at[i, 'SOIL_TEXTURE'] = crspy.soil_texture(sand, silt, clay)
             
             #ADD LAND COVER
             lc = crspy.find_lc(lat, lon)

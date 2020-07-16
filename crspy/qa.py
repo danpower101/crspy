@@ -153,7 +153,7 @@ def QA_plotting(df, country, sitenum, defaultdir):
     df['MONTH'] = df['DT'].dt.month
     df['DAY'] = df['DT'].dt.day
     # Reduce the size to include the variables to be compared - otherwise it's far too big
-    dfcomp = pd.DataFrame(df, columns = [ "MOD", "UNMOD", "YEAR", "MONTH", "DAY", "PRESS", "fsol", "fbar", "fawv", "TEMP", 
+    dfcomp = pd.DataFrame(df, columns = [ "MOD", "UNMOD", "YEAR", "MONTH", "DAY", "PRESS", "fsolGV", "fbar", "fawv", "TEMP", #!!!
                                          "BATT", "I_TEMP", "I_RH"])
     
     # Folder Housekeeping - create if not already there
@@ -193,7 +193,7 @@ def QA_plotting(df, country, sitenum, defaultdir):
     plt.close()
     
     # Plot fsol
-    tseriesplots("fsol", df,  defaultdir, country, sitenum)
+    tseriesplots("fsolGV", df,  defaultdir, country, sitenum)
     # Plot fbar
     tseriesplots ("fbar", df, defaultdir, country, sitenum)
     # Plot fawv
