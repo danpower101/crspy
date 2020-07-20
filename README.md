@@ -1,5 +1,5 @@
-## Cosmic-Ray Sensor PYthon tool (crspy)
-This tool can process Cosmic Ray Neutron Sensor data into soil moisture estimates. It is based on research conducted by many individuals and groups (see references). It is part of a PhD project at the University of Bristol by Daniel Power - funded by ESPRC EP/L016214/1. 
+# Cosmic-Ray Sensor PYthon tool (crspy)
+This tool can process Cosmic Ray Neutron Sensor data into soil moisture estimates. It is based on research conducted by many individuals and groups (see references). It is part of a PhD project at Bristol University by Daniel Power. 
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 ![Python](https://img.shields.io/badge/python-v3.7+-blue.svg)
@@ -37,7 +37,7 @@ Before processing data it is required to prepare your working environment. This 
 
 Once the preliminary steps have been completed the timeseries data can be processed
 
-[**Processing Data**](tbc) 
+[**Processing Data**](https://github.com/danpower101/crspy/wiki/Processing-the-data) 
 
 
 
@@ -45,7 +45,7 @@ Once the preliminary steps have been completed the timeseries data can be proces
 
 There are a lot of steps involved in the processing of neutron data to give us our outputs. A high level description has been provided to demonstrate what steps have been taken without having to look into the code. 
 
-[**High level process description**](tbc)
+[**High level process description**](https://github.com/danpower101/crspy/wiki/High-level-process-description)
 
 
 
@@ -55,7 +55,7 @@ When setting up your working directory the folder structure is written out for y
 
 [**Description of folders**](tbc)
 
-[**Description of outputs**](tbc)
+[**Description of outputs**](https://github.com/danpower101/crspy/wiki/Outputs)
 
 
 
