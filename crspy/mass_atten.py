@@ -4,7 +4,7 @@ Created on Thu Apr  2 11:56:24 2020
 
 @author: Daniel Power
 
-This function was provided by Darin Desilets (HydroInnova) and adapted for use in SMOON.
+This function was provided by Darin Desilets (HydroInnova) and adapted for use in crspy.
 
 
 Reference Pressure Calc (x0) from:
