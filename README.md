@@ -28,8 +28,8 @@ The example workflow will walk through how to run this package using the provide
 Before processing data it is required to prepare your working environment. This includes signing up to global data products, saving some settings on your computer to allow easy access to these products and downloading some datasets to your working directory. These are all described below in separate mini walkthroughs. They should be tackled in the order presented to avoid issues:
 
 1. [**Metadata**](https://github.com/danpower101/crspy/wiki/Metadata)
-2. [**ERA5-Land Data**](https://github.com/danpower101/crspy/wiki/ERA5-Land-Data)
-3. [**Land Cover Data**](https://github.com/danpower101/crspy/wiki/Land-Cover-Data)
+2. [**Meteorological Data (ERA5-Land)**](https://github.com/danpower101/crspy/wiki/ERA5-Land-Data)
+3. [**Land Cover Data (CCI)**](https://github.com/danpower101/crspy/wiki/Land-Cover-Data)
 4. [**Above Ground Biomass Data**](https://github.com/danpower101/crspy/wiki/Above-Ground-Biomass-Data)
 5. [**Fill metadata table**](https://github.com/danpower101/crspy/wiki/Fill-metadata-table)
 6. [**Raw Timeseries Data**](https://github.com/danpower101/crspy/wiki/Raw-Timeseries-Data)
