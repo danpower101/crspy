@@ -27,7 +27,6 @@ import math
 os.chdir(nld['defaultdir'])
 import crspy
 #import neutron_correction_funcs as ncf
-#import SMOON.neutron_correction_funcs as ncf
 
 import matplotlib.pyplot as plt
 import warnings
