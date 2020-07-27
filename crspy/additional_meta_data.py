@@ -207,7 +207,7 @@ def dl_agb():
     print("Downloading...")
     urllib.request.urlretrieve("ftp://anon-ftp.ceda.ac.uk/neodc/esacci/biomass/data/agb/maps/2017/v1.0/netcdf/ESACCI-BIOMASS-L4-AGB-MERGED-100m-2017-fv1.0.nc", nld['defaultdir']+"/data/global_biomass_netcdf/ESACCI-BIOMASS-L4-AGB-MERGED-100m-2017-fv1.0.nc" )
     print("Done")
-    return
+    
 
 
 def get_agb(lat, lon, tol=0.001):
