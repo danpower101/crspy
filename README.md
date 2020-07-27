@@ -1,5 +1,5 @@
 # Cosmic-Ray Sensor PYthon tool (crspy)
-This tool can process Cosmic Ray Neutron Sensor data into soil moisture estimates. It is based on research conducted by many individuals and groups (see references). It is part of a PhD project by Daniel Power funded by the Water Informatics, Science and Engineering (WISE CDT) at the University of Bristol - ESPRC Funding EP/L016214/1
+This tool can process Cosmic Ray Sensor data into soil moisture estimates. It is based on research conducted by many individuals and groups (see references). It is part of a PhD project by Daniel Power funded by the Water Informatics, Science and Engineering (WISE CDT) at the University of Bristol - ESPRC Funding EP/L016214/1
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 ![Python](https://img.shields.io/badge/python-v3.7+-blue.svg)
@@ -19,7 +19,7 @@ A broad description of the tool and why it was written.
 
 Begin here for a description of how to download and install crspy, as well as how to prepare your working directory.
 
-[**Example Workflow**](tbc)
+[**Example Workflow**](https://github.com/danpower101/crspy/wiki/Example-Workflow)
 
 The example workflow will walk through how to run this package using the provided examples. The links below provide specific guidance on each step.
 
@@ -29,8 +29,8 @@ Before processing data it is required to prepare your working environment. This 
 
 1. [**Metadata**](https://github.com/danpower101/crspy/wiki/Metadata)
 2. [**Meteorological Data (ERA5-Land)**](https://github.com/danpower101/crspy/wiki/ERA5-Land-Data)
-3. [**Land Cover Data (CCI)**](https://github.com/danpower101/crspy/wiki/Land-Cover-Data)
-4. [**Above Ground Biomass Data**](https://github.com/danpower101/crspy/wiki/Above-Ground-Biomass-Data)
+3. [**Land Cover Data (ESA CCI)**](https://github.com/danpower101/crspy/wiki/Land-Cover-Data)
+4. [**Above Ground Biomass Data (ESA CCI)**](https://github.com/danpower101/crspy/wiki/Above-Ground-Biomass-Data)
 5. [**Fill metadata table**](https://github.com/danpower101/crspy/wiki/Fill-metadata-table)
 6. [**Raw Timeseries Data**](https://github.com/danpower101/crspy/wiki/Raw-Timeseries-Data)
 7. [**Calibration Data**](https://github.com/danpower101/crspy/wiki/Calibration-Data)
