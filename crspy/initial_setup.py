@@ -85,7 +85,7 @@ def initial(wd):
         pass
 		
     try:	
-        os.mkdir(wd+"/data/global_biomass_tiff")
+        os.mkdir(wd+"/data/global_biomass_netcdf")
     except:
         print("Folder already exists, skipping.")
         pass
