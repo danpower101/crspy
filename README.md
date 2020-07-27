@@ -1,5 +1,5 @@
 # Cosmic-Ray Sensor PYthon tool (crspy)
-This tool can process Cosmic Ray Neutron Sensor data into soil moisture estimates. It is based on research conducted by many individuals and groups (see references). It is part of a PhD project at Bristol University by Daniel Power. 
+This tool can process Cosmic Ray Neutron Sensor data into soil moisture estimates. It is based on research conducted by many individuals and groups (see references). It is part of a PhD project by Daniel Power funded by the Water Informatics, Science and Engineering (WISE CDT) at the University of Bristol - ESPRC Funding EP/L016214/1
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 ![Python](https://img.shields.io/badge/python-v3.7+-blue.svg)
@@ -18,6 +18,10 @@ A broad description of the tool and why it was written.
 [**Getting Started**](https://github.com/danpower101/crspy/wiki/Getting-Started)
 
 Begin here for a description of how to download and install crspy, as well as how to prepare your working directory.
+
+[**Example Workflow**](tbc)
+
+The example workflow will walk through how to run this package using the provided examples. The links below provide specific guidance on each step.
 
 ### **Preliminary Steps**
 
@@ -58,6 +62,10 @@ When setting up your working directory the folder structure is written out for y
 [**Description of outputs**](https://github.com/danpower101/crspy/wiki/Outputs)
 
 
+
+### **Additional Information**
+
+[**References**](tbc)
 
 ## License
 MIT License
