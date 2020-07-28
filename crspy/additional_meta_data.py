@@ -384,7 +384,7 @@ def nmdb_get(startdate, enddate):
     url = url.format(sd=sd, sm=sm, sy=sy, ed=ed, em=em, ey=ey)
     response = urllib.request.urlopen(url)
     html = response.read()
-    soup = BeautifulSoup(html, features="lxml")
+    soup = BeautifulSoup(html, features="html.parser")
     pre = soup.find_all('pre')
     pre = pre[0].text
     pre = pre[pre.find('start_date_time'):]

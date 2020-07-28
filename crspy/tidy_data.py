@@ -174,7 +174,10 @@ def prepare_data(fileloc):
     print("Collecting ERA-5 Land variables...")
     try:
         era5 = xr.open_dataset(nld['defaultdir']+"data/era5land/"+nld['era5_filename']+".nc") #
-        era5site = era5.sel(site=sitecode)
+        try:
+            era5site = era5.sel(site=sitecode) 
+        except:
+            era5site = era5 # If user only has one site it breaks here - this stops that
         era5time = pd.to_datetime(era5site.time.values)
         
         temp_dict = dict(zip(era5time, era5site.temperature.values-273.15)) # minus 273.15 to convert to celcius as era5 stores it as kelvin
