@@ -181,7 +181,7 @@ def prepare_data(fileloc):
         era5time = pd.to_datetime(era5site.time.values)
         
         temp_dict = dict(zip(era5time, era5site.temperature.values-273.15)) # minus 273.15 to convert to celcius as era5 stores it as kelvin
-        prcp_dict = dict(zip(era5time, era5site.precipitation.values))
+        prcp_dict = dict(zip(era5time, era5site.precipitation.values*1000)) # prcp is in meteres in ERA5 so convert to mm
         dptemp_dict = dict(zip(era5time, era5site.dewpoint_temperature.values-273.15))    
         press_dict = dict(zip(era5time, era5site.pressure.values*0.01)) # Want to check on this
         swe_dict = dict(zip(era5time,era5site.snow_water_equiv.values))
