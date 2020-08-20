@@ -208,13 +208,7 @@ def prepare_data(fileloc):
         prcp_dict = shiftandget(era5time, era5site.precipitation.values*1000, tz)
         dptemp_dict = shiftandget(era5time, era5site.dewpoint_temperature.values-273.15, tz)
         press_dict = shiftandget(era5time, era5site.pressure.values*0.01, tz)
-        swe_dict = shiftandget(era5time, era5site.snow_water_equiv.values*1000, tz)
-        
-        #temp_dict = dict(zip(era5time, era5site.temperature.values-273.15)) # minus 273.15 to convert to celcius as era5 stores it as kelvin
-       # prcp_dict = dict(zip(era5time, era5site.precipitation.values*1000)) # prcp is in meteres in ERA5 so convert to mm
-        #dptemp_dict = dict(zip(era5time, era5site.dewpoint_temperature.values-273.15))    
-        #press_dict = dict(zip(era5time, era5site.pressure.values*0.01)) # Want to check on this
-        #swe_dict = dict(zip(era5time,era5site.snow_water_equiv.values))
+        swe_dict = shiftandget(era5time, era5site.snow_water_equiv.values*1000, tz)        
         
         # Add the ERA5_Land data 
         if df.E_TEM.mean() == -999:
