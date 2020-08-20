@@ -282,7 +282,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     lvl1 = pd.read_csv(nld['defaultdir'] + "/data/crns_data/tidy/"+country+"_SITE_" + sitenum+"_TIDY.txt", sep="\t")
     lvl1['DATE'] = pd.to_datetime(lvl1['DT'], format='%Y/%m/%d')  #Use correct formatting
     lvl1['DATE'] = lvl1['DATE'].dt.date     # Remove the time portion
-    lvl1[lvl1 == -999] = np.nan
+    lvl1[lvl1 == nld['noval']] = np.nan
     
     #Creates dictionary of dfs for calibration days found
     dflvl1Days = dict()

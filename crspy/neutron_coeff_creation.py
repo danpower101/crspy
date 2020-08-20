@@ -142,7 +142,7 @@ def neutcoeffs(df, country, sitenum):
     df.loc[df['fsol'].isnull(), :] = np.nan
     df = df.set_index(DTstore)
     df['DT'] = df.index
-    df = df.replace(np.nan,-999)
+    df = df.replace(np.nan,nld['noval'])
     df = df.round(3) # decimal place limit
     
     # Save Lvl1 data

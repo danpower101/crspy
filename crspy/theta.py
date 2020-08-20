@@ -65,7 +65,7 @@ def thetaprocess(df, meta, country, sitenum):
     ###############################################################################
     print("Calculating soil moisture along with estimated error...")
     df = pd.read_csv(nld['defaultdir']+"data/crns_data/FINAL/"+country+"_SITE_"+sitenum+"_final.txt", sep="\t")
-    df = df.replace(-999, np.nan)
+    df = df.replace(nld['noval'], np.nan)
     
     # Create MOD count to min and max of error
     df['MOD_CORR_PLUS'] = df['MOD_CORR'] + df['MOD_ERR']
@@ -116,14 +116,14 @@ def thetaprocess(df, meta, country, sitenum):
     
     # Write a "clean" file that is just corrected soil moisture and depth of measurement
     smclean = pd.DataFrame(df, columns = [ "DT", "SM", "D86avg", "SM_12h",  "D86avg_12h"]) # removed "SM_12h_SG" for now
-    smclean = smclean.replace(np.nan, -999)
+    smclean = smclean.replace(np.nan, nld['noval'])
     smclean = smclean.round(3)
     smclean.to_csv(nld['defaultdir'] + "/data/crns_data/simple/"+country+"_SITE_" + sitenum+"_simple.txt",
           header=True, index=False, sep="\t", mode='w')
     
     
     # Replace nans with -999
-    df.fillna(-999, inplace=True)
+    df.fillna(nld['noval'], inplace=True)
     df = df.round(3)
     df = df.drop(['rs10m', 'rs75m', 'rs150m','D86_10m', 'D86_75m', 'D86_150m', 'MOD_CORR_PLUS', 'MOD_CORR_MINUS', 'SM_PLUS_ERR', 'SM_MINUS_ERR'  ], axis=1)
     

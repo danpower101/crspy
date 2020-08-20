@@ -41,7 +41,7 @@ def dropemptycols(colstocheck, df):
         col = colstocheck[i]
         if col in df:
             try:
-                if df[col].mean() == -999:
+                if df[col].mean() == nld['noval']:
                     df = df.drop([col], axis=1)
                 else:
                     pass
@@ -193,10 +193,8 @@ def prepare_data(fileloc):
     
     #!!! TO DO add a check here to see if we need ERA5_Land data
     
-    
-    
+
     # Read in the time zone of the site
-    tz = int(meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'TIMEZONE'].item())
     print("Collecting ERA-5 Land variables...")
     try:
         era5 = xr.open_dataset(nld['defaultdir']+"data/era5land/"+nld['era5_filename']+".nc") #
@@ -206,27 +204,27 @@ def prepare_data(fileloc):
             era5site = era5 # If user only has one site it breaks here - this stops that
         era5time = pd.to_datetime(era5site.time.values)
         
-        temp_dict = shiftandget(era5time, era5site.temperature.values-273.15, tz)
-        prcp_dict = shiftandget(era5time, era5site.precipitation.values*1000, tz)
-        dptemp_dict = shiftandget(era5time, era5site.dewpoint_temperature.values-273.15, tz)
-        press_dict = shiftandget(era5time, era5site.pressure.values*0.01, tz)
-        swe_dict = shiftandget(era5time, era5site.snow_water_equiv.values*1000, tz)        
+        temp_dict = dict(zip(era5time, era5site.temperature.values-273.15)) # minus 273.15 to convert to celcius as era5 stores it as kelvin
+        prcp_dict = dict(zip(era5time, era5site.precipitation.values*1000)) # prcp is in meteres in ERA5 so convert to mm
+        dptemp_dict = dict(zip(era5time, era5site.dewpoint_temperature.values-273.15))    
+        press_dict = dict(zip(era5time, era5site.pressure.values*0.01)) # Want to check on this
+        swe_dict = dict(zip(era5time,era5site.snow_water_equiv.values*1000))      
         
         # Add the ERA5_Land data 
-        if df.E_TEM.mean() == -999:
+        if df.E_TEM.mean() == nld['noval']:
             df['TEMP'] = df['DT'].map(temp_dict)
             meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'TEM_DATA_SOURCE'] = 'ERA5_Land'
         else:
             df['TEMP'] = df['E_TEM']
             meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'TEM_DATA_SOURCE'] = 'Local'
         
-        if df.RAIN.mean() == -999:
+        if df.RAIN.mean() == nld['noval']:
             df['RAIN'] = df['DT'].map(prcp_dict)
             meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'RAIN_DATA_SOURCE'] = 'ERA5_Land'
         else:
             meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'RAIN_DATA_SOURCE'] = 'Local'
             
-        if df.E_RH.mean() == -999:
+        if df.E_RH.mean() == nld['noval']:
             rh = False
             meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'RH_DATA_SOURCE'] = 'None'
         else:
@@ -241,8 +239,8 @@ def prepare_data(fileloc):
     
         # PRESS2 is more accurate pressure gauge - use if available and if not fill in with PRESS1
         df['PRESS'] = df['PRESS2']
-        df.loc[df['PRESS'] == -999, 'PRESS'] = df['PRESS1']
-        df = df.replace(-999, np.nan)
+        df.loc[df['PRESS'] == nld['noval'], 'PRESS'] = df['PRESS1']
+        df = df.replace(nld['noval'], np.nan)
         
         if rh == False:
             df['VP'] = df.apply(lambda row: crspy.dew2vap(row['DEWPOINT_TEMP']), axis=1) # VP is in kPA

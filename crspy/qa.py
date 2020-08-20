@@ -94,7 +94,7 @@ def flag_and_remove(df, N0, country, sitenum):
     #df = df.reset_index(drop=True)
     
     # Fill in master time again after removing
-    df.replace(-999, np.nan, inplace=True) # Need this to handle below code
+    df.replace(nld['noval'], np.nan, inplace=True) # Need this to handle below code
     df['DT'] = pd.to_datetime(df['DT'], format="%Y-%m-%d %H:%M:%S")
     df = df.set_index(df.DT)
     df = df.reindex(idx, fill_value=nld['noval'])
