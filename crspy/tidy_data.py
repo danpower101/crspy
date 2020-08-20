@@ -51,6 +51,29 @@ def dropemptycols(colstocheck, df):
             pass
     return df
     
+###############################################################################
+#                       Shift ERA5 Land                                       #
+###############################################################################
+
+def shiftandget(era5time, netcdfval, tz):
+    """
+    ERA5-Land data is stored using UTC, this needs to be shifted to the timezone
+    of the site. 
+    
+    Parameters:
+        era5time = copy of the era5time dataframe
+        netcdfval = the netcdf series to be collected
+        tz = the time zone of the sensor site
+    """
+    eratemp = pd.DataFrame(era5time.copy())
+    tmptemp = pd.Series(netcdfval)
+    eratemp['val'] = tmptemp
+    eratemp = eratemp.set_index(eratemp[0])
+    eratemp2 = eratemp.shift(tz)
+    eratemp2.drop(columns=[0], inplace=True)
+    tmpdict = dict(zip(eratemp2.index, eratemp2['val']))
+    return tmpdict
+
 
 def prepare_data(fileloc):
     """
@@ -170,7 +193,8 @@ def prepare_data(fileloc):
     
     #!!! TO DO add a check here to see if we need ERA5_Land data
     
-    
+    # Read in the time zone of the site
+    tz = int(meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'TIMEZONE'].item())
     print("Collecting ERA-5 Land variables...")
     try:
         era5 = xr.open_dataset(nld['defaultdir']+"data/era5land/"+nld['era5_filename']+".nc") #
@@ -180,11 +204,17 @@ def prepare_data(fileloc):
             era5site = era5 # If user only has one site it breaks here - this stops that
         era5time = pd.to_datetime(era5site.time.values)
         
-        temp_dict = dict(zip(era5time, era5site.temperature.values-273.15)) # minus 273.15 to convert to celcius as era5 stores it as kelvin
-        prcp_dict = dict(zip(era5time, era5site.precipitation.values*1000)) # prcp is in meteres in ERA5 so convert to mm
-        dptemp_dict = dict(zip(era5time, era5site.dewpoint_temperature.values-273.15))    
-        press_dict = dict(zip(era5time, era5site.pressure.values*0.01)) # Want to check on this
-        swe_dict = dict(zip(era5time,era5site.snow_water_equiv.values))
+        temp_dict = shiftandget(era5time, era5site.temperature.values-273.15, tz)
+        prcp_dict = shiftandget(era5time, era5site.precipitation.values*1000, tz)
+        dptemp_dict = shiftandget(era5time, era5site.dewpoint_temperature.values-273.15, tz)
+        press_dict = shiftandget(era5time, era5site.pressure.values*0.01, tz)
+        swe_dict = shiftandget(era5time, era5site.snow_water_equiv.values*1000, tz)
+        
+        #temp_dict = dict(zip(era5time, era5site.temperature.values-273.15)) # minus 273.15 to convert to celcius as era5 stores it as kelvin
+       # prcp_dict = dict(zip(era5time, era5site.precipitation.values*1000)) # prcp is in meteres in ERA5 so convert to mm
+        #dptemp_dict = dict(zip(era5time, era5site.dewpoint_temperature.values-273.15))    
+        #press_dict = dict(zip(era5time, era5site.pressure.values*0.01)) # Want to check on this
+        #swe_dict = dict(zip(era5time,era5site.snow_water_equiv.values))
         
         # Add the ERA5_Land data 
         if df.E_TEM.mean() == -999:
