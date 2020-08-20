@@ -193,6 +193,8 @@ def prepare_data(fileloc):
     
     #!!! TO DO add a check here to see if we need ERA5_Land data
     
+    
+    
     # Read in the time zone of the site
     tz = int(meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'TIMEZONE'].item())
     print("Collecting ERA-5 Land variables...")
