@@ -557,7 +557,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     
     meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'N0'] = N0
 
-    meta.to_csv(nld['defaultdir'] + "/data/meta_data.csv", header=True, index=False, mode='w')
+    meta.to_csv(nld['defaultdir'] + "/data/metadata.csv", header=True, index=False, mode='w')
 	
     """
                             User Report

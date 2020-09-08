@@ -115,7 +115,7 @@ def era5landnetcdf(years, months, tol, loadname, savename, ogfile=None):
             e.g. nld['defaultdir']+"/data/era5_land/era5land_all_sites.nc" or "None"
     
     """
-    meta = pd.read_csv(nld['defaultdir']+"/data/meta_data.csv")
+    meta = pd.read_csv(nld['defaultdir']+"/data/metadata.csv")
     meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Add leading zeros
     
     
@@ -135,7 +135,7 @@ def era5landnetcdf(years, months, tol, loadname, savename, ogfile=None):
                 timearray = list(ds.time.values)   #Extract the times
                 
                 """
-                Trial and error method. Go through the meta_data, extract lat lon,
+                Trial and error method. Go through the metadata, extract lat lon,
                 extract site name and code, then attempt to find the data within the 
                 defined tolerance from the data in the store folder.
                 If not found will move onto the next.

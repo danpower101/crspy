@@ -18,5 +18,5 @@ from .neutron_correction_funcs import *
 from .qa import *
 from .theta import *
 from .tidy_data import *
-from .additional_meta_data import *
+from .additional_metadata import *
 from .full_process_wrapper import *

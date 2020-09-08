@@ -98,7 +98,7 @@ def prepare_data(fileloc):
     #                       organise time and date                                #
     ###############################################################################
     
-    meta = pd.read_csv(nld['defaultdir'] + "/data/meta_data.csv")
+    meta = pd.read_csv(nld['defaultdir'] + "/data/metadata.csv")
     meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Add leading zeros
     
     # Extract the country and site number from file name
@@ -299,7 +299,7 @@ def prepare_data(fileloc):
     df['MOD'] = df['MOD'].replace(0, nld['noval']) # SD card data had some 0 values - should be nan
     #Change Order 
 
-    meta.to_csv(nld['defaultdir'] + "/data/meta_data.csv", header=True, index=False, mode='w')
+    meta.to_csv(nld['defaultdir'] + "/data/metadata.csv", header=True, index=False, mode='w')
 	# Save Tidy data
     df.to_csv(nld['defaultdir'] + "/data/crns_data/tidy/"+country+"_SITE_" + sitenum+"_TIDY.txt", 
           header=True, index=False, sep="\t",  mode='w')

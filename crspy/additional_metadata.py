@@ -220,7 +220,7 @@ def get_agb(lat, lon, tol=0.001):
         
 ###################### Fill in metadata ######################################
         
-def fill_meta_data(meta):
+def fill_metadata(meta):
     
     """
     Reads in meta_data table, uses the latitude and longitude of each site to find
@@ -358,7 +358,7 @@ def fill_meta_data(meta):
     meta['BETA_COEFF'], meta['REFERENCE_PRESS'] = crspy.betacoeff(meta['LATITUDE'],
         meta['ELEV'], meta['GV'])
     
-    meta.to_csv(nld['defaultdir'] + "/data/meta_data.csv", header=True, index=False, mode='w')
+    meta.to_csv(nld['defaultdir'] + "/data/metadata.csv", header=True, index=False, mode='w')
     
     return meta
 

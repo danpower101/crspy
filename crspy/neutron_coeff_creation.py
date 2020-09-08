@@ -48,7 +48,7 @@ def neutcoeffs(df, country, sitenum):
     
     print ("~~~~~~~~~~~~~ Calculate Neutron Correction Factors ~~~~~~~~~~~~~")
     # Read in meta fresh
-    meta = pd.read_csv(nld['defaultdir']+"/data/meta_data.csv")
+    meta = pd.read_csv(nld['defaultdir']+"/data/metadata.csv")
     meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Ensure its three digits
     
     df = df.replace(nld['noval'], np.nan)
@@ -148,6 +148,6 @@ def neutcoeffs(df, country, sitenum):
     # Save Lvl1 data
     df.to_csv(nld['defaultdir'] + "/data/crns_data/level1/"+country+"_SITE_" + sitenum+"_LVL1.txt",
           header=True, index=False, sep="\t",  mode='w')
-    meta.to_csv(nld['defaultdir'] + "/data/meta_data.csv", header=True, index=False, mode='w')
+    meta.to_csv(nld['defaultdir'] + "/data/metadata.csv", header=True, index=False, mode='w')
     print ("Done")
     return df, meta

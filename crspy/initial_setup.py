@@ -118,10 +118,10 @@ def initial(wd):
                      "BD", "N0", "AGBWEIGHT",  "RAIN_DATA_SOURCE", "TEM_DATA_SOURCE", "RH_DATA_SOURCE", "BETA_COEFF", "REFERENCE_PRESS"
                     ]
     # Write metadata file structure if not already there.
-    pathfile = wd +"/data/meta_data.csv"
+    pathfile = wd +"/data/metadata.csv"
     files_present = os.path.isfile(pathfile) 
     if not files_present:
         meta = pd.DataFrame(columns = columns_names)
-        meta.to_csv(wd +"/data/meta_data.csv", header=True, index=False, mode="w")
+        meta.to_csv(wd +"/data/metadata.csv", header=True, index=False, mode="w")
     else:
         print("Meta data file already present")
