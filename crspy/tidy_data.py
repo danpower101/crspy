@@ -191,7 +191,7 @@ def prepare_data(fileloc):
     local data.
     """
     
-    #!!! TO DO add a check here to see if we need ERA5_Land data
+    #!!! TO DO add a check here to see if we need ERA5_Land data in the first place
     
 
     # Read in the time zone of the site
@@ -253,6 +253,15 @@ def prepare_data(fileloc):
             
         print("Done")
     except:
+        df['PRESS'] = df['PRESS2']
+        df.loc[df['PRESS'] == nld['noval'], 'PRESS'] = df['PRESS1'] # !!!added
+        df = df.replace(nld['noval'], np.nan)
+        
+        df['TEMP'] = df['E_TEM']
+        
+        df['es'] = df.apply(lambda row: crspy.es(row['TEMP']), axis=1) # Output is in hectopascals
+        df['es'] = df['es']*100  # Convert to Pascals
+        df['VP'] = df.apply(lambda row: crspy.ea(row['es'], row['E_RH']), axis=1)
         print("Cannot load era5_land data. Please download data as it is needed.")
 
     ###############################################################################
