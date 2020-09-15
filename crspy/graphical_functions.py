@@ -17,9 +17,6 @@ import pandas as pd
 import math
 import seaborn as sns
 
-country = "USA"
-sitenum = "011"
-yearlysm=True
 
 def colourts(country, sitenum, yearlysm=False):
     """
