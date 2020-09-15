@@ -113,6 +113,12 @@ def initial(wd):
     except:
         print("Folder already exists, skipping.")
         pass
+
+    try:
+        os.mkdir(wd+"/data/figures")
+    except:
+        print("Folder already exists, skipping.")
+        pass
 		
     columns_names = ["COUNTRY", "SITENUM", "SITENAME", "INSTALL_DATE", "LATITUDE", "LONGITUDE", "ELEV", "TIMEZONE", "GV", "LW", "SOC",
                      "BD", "N0", "AGBWEIGHT",  "RAIN_DATA_SOURCE", "TEM_DATA_SOURCE", "RH_DATA_SOURCE", "BETA_COEFF", "REFERENCE_PRESS"

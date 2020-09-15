@@ -78,13 +78,13 @@ def modh(mod, pv, pv0):
     return mod * (1+0.0054*(pv-pv0))
 
 ####################################################################################
-#                              Solar Intensity                                     #
+#                              Incoming Cosmic-Ray Intensity                       #
 ####################################################################################
 def si(mod, inten):
     """ Simply takes the neutron count and divides by inten coeff"""
     return mod/inten
 
-def fsol(jung_ref, jung_count):
+def finten(jung_ref, jung_count):
     return jung_ref / jung_count
 
 def RcCorr(Rc):

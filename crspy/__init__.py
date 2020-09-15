@@ -20,3 +20,4 @@ from .theta import *
 from .tidy_data import *
 from .additional_metadata import *
 from .full_process_wrapper import *
+from .graphical_functions import *

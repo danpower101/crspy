@@ -54,9 +54,12 @@ def dropemptycols(colstocheck, df):
 ###############################################################################
 #                       Shift ERA5 Land                                       #
 ###############################################################################
+"""
+Not the case, keep as can use eventually to shift from UTC to local time??
+
 
 def shiftandget(era5time, netcdfval, tz):
-    """
+    ""
     ERA5-Land data is stored using UTC, this needs to be shifted to the timezone
     of the site. 
     
@@ -64,7 +67,7 @@ def shiftandget(era5time, netcdfval, tz):
         era5time = copy of the era5time dataframe
         netcdfval = the netcdf series to be collected
         tz = the time zone of the sensor site
-    """
+    ""
     eratemp = pd.DataFrame(era5time.copy())
     tmptemp = pd.Series(netcdfval)
     eratemp['val'] = tmptemp
@@ -73,7 +76,7 @@ def shiftandget(era5time, netcdfval, tz):
     eratemp2.drop(columns=[0], inplace=True)
     tmpdict = dict(zip(eratemp2.index, eratemp2['val']))
     return tmpdict
-
+"""
 
 def prepare_data(fileloc):
     """
@@ -253,6 +256,7 @@ def prepare_data(fileloc):
             
         print("Done")
     except:
+        # Introduced this bit to allow using sites that don't need ERA5_Land
         df['PRESS'] = df['PRESS2']
         df.loc[df['PRESS'] == nld['noval'], 'PRESS'] = df['PRESS1'] # !!!added
         df = df.replace(nld['noval'], np.nan)
