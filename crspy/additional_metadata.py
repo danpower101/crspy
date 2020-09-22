@@ -220,12 +220,18 @@ def get_agb(lat, lon, tol=0.001):
         
 ###################### Fill in metadata ######################################
         
-def fill_metadata(meta):
+def fill_metadata(meta, calc_beta=True):
     
     """
     Reads in meta_data table, uses the latitude and longitude of each site to find
     metadata from the ISRIC soil database, as well as calculating reference pressure
     and beta coefficient.
+    
+    Parameters:
+        meta = csv file containing the metadata for each site (listed below)
+        calc_beta = boolean - whether or not to calculte the beta coefficient
+                    included as this requires GV and perhaps a user wants data
+                    without this
     
     REQUIRED COLUMNS IN META_DATA:
         LATITUDE: latitude in degrees
@@ -233,9 +239,9 @@ def fill_metadata(meta):
         LONGITUDE: longitude in degrees
             e.g. 51.1
         ELEV: elevation of site in metres
-            e.g. 201
+            e.g. 201(NOT REQUIRED IF CALC_BETA TURNED OFF)
         GV: cutoff rigidity of site (can be obtained at http://crnslab.org/util/rigidity.php )
-            e.g. 2.2
+            e.g. 2.2 (NOT REQUIRED IF CALC_BETA TURNED OFF)
     """
     
     meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Ensure leading zeros
@@ -247,7 +253,8 @@ def fill_metadata(meta):
         try:
             lat = meta['LATITUDE'][i]
             lon = meta['LONGITUDE'][i]
-            
+            country = meta['COUNTRY'][i]
+            sitenum = meta['SITENUM'][i]
             
             resdict = crspy.isric_variables(lat, lon)
             wrb = crspy.isric_wrb_class(lat, lon)
@@ -347,16 +354,24 @@ def fill_metadata(meta):
             #Add above ground biomass data
             agb = crspy.get_agb(lat, lon)
             meta.at[i, 'AGBWEIGHT'] = agb
+            
+            #ADD KG climate
+            kg, meanprecip, meantemp = crspy.KG_func(meta, country, sitenum)
+            meta.at[i, 'KG_CLIMATE'] = kg
+            meta.at[i, 'MEAN_ANNUAL_PRECIP'] = meanprecip
+            meta.at[i, 'MEAN_ANNUAL_TEMP'] = meantemp
         except:
             pass
         
 
 
-
-    print("Calculate Beta Coeff...")
-
-    meta['BETA_COEFF'], meta['REFERENCE_PRESS'] = crspy.betacoeff(meta['LATITUDE'],
-        meta['ELEV'], meta['GV'])
+    if calc_beta == True:
+        print("Calculating Beta Coeff...")
+    
+        meta['BETA_COEFF'], meta['REFERENCE_PRESS'] = crspy.betacoeff(meta['LATITUDE'],
+            meta['ELEV'], meta['GV'])
+    else:
+        pass
     
     meta.to_csv(nld['defaultdir'] + "/data/metadata.csv", header=True, index=False, mode='w')
     
@@ -407,3 +422,180 @@ def nmdb_get(startdate, enddate):
     
     return dfdict
 
+############## Koppen Gieger classification ###################################
+"""
+Based off the paper Peel et al., (2007) https://hess.copernicus.org/articles/11/1633/2007/hess-11-1633-2007.pdf
+
+Uses the ERA5_Land data for each site to give a KG class.
+
+"""
+
+def KG_func(meta, country, sitenum):
+
+    sitecode = country+"_SITE_"+sitenum
+    
+    era5 = xr.open_dataset(nld['defaultdir']+"data/era5land/"+nld['era5_filename']+".nc") #
+    try:
+        era5site = era5.sel(site=sitecode) 
+    except:
+        era5site = era5 # If user only has one site it breaks here - this stops that
+    
+    df = pd.DataFrame()
+    df['DT'] = pd.to_datetime(era5site.time.values)
+    df['TEMP'] = era5site.temperature.values-273.15
+    df['PRCP'] = era5site.precipitation.values*1000
+    df['YEAR'] = df['DT'].dt.year
+    df['MONTH'] = df['DT'].dt.month
+    df['HOUR'] = df['DT'].dt.hour
+    df.loc[df['HOUR'] != 0, 'PRCP'] = 0 # to account for era5 accumulation
+    
+    uniqueyears = df['YEAR'].unique()
+    dfdicts = dict()
+    
+    for i in range(len(uniqueyears)):
+        dfyr = df.loc[df['YEAR'] == uniqueyears[i]]
+        tmp = dfyr.groupby(['MONTH']).mean()
+        tmpprcp = dfyr.groupby(['MONTH']).sum()
+        tmp['PRCP'] = tmpprcp['PRCP']
+        dfdicts[i] = tmp
+    
+    
+    KG_all = []
+    MAPs = []
+    MATs = []    
+    for i in range(len(dfdicts)):
+        df = dfdicts[i]
+        
+        one = []
+        two = []
+        three = []
+        
+        
+        
+        # CALCULATE THE VALUES FOR THE CONDITIONALS
+        Tcold = df['TEMP'].min()
+        Thot = df['TEMP'].max()
+        Pdry = df['PRCP'].min()
+        MAP = df['PRCP'].sum()
+        MAT = df['TEMP'].mean()
+        season1 = df.loc[[1,2,3,10,11,12]]
+        season2 = df.loc[[4,5,6,7,8,9]]
+        if season1['TEMP'].mean() > season2['TEMP'].mean():
+            summer = season1.copy()
+            winter = season2.copy()
+        else:
+            summer = season2.copy()
+            winter = season1.copy()
+        Psdry = summer['PRCP'].min()
+        Pwdry = winter['PRCP'].min()
+        Pswet = summer['PRCP'].max()
+        Pwwet = winter['PRCP'].min()
+        #Check for Pthresh
+        if (winter['PRCP'].sum()/MAP)*100 >= 70:
+            Pthresh = 2*MAT
+        elif (summer['PRCP'].sum()/MAP)*100 >= 70:
+            Pthresh = 2*MAT+28
+        else:
+            Pthresh = 2*MAT+14
+        Tmon10 = sum(df['TEMP']>10)
+        
+        # Big nested conditionals for KG
+        if Tcold >= 18:
+            one = "A"
+            if Pdry >= 60:
+                two = "f"
+            elif Pdry >= 100-(MAP/25):
+                two = "m"
+            else:
+                two = "w"
+        elif MAP < 10*Pthresh:
+            one = "B"
+            if MAP < 5*Pthresh:
+                two = "W"
+                if MAT >= 18:
+                    three = "h"
+                else:
+                    three = "k"
+            else:
+                two = "S"
+                if MAT >= 18:
+                    three = "h"
+                else:
+                    three = "k"        
+        elif Thot > 10 and 0<Tcold<18:
+            one = "C"
+            if Psdry < 40 and Psdry<(Pwwet/3):
+                two = "s"
+                if Thot >= 22:
+                    three = "a"
+                elif Tmon10 >= 4:
+                    three = "b"
+                else:
+                    three = "c"
+            elif Pwdry < (Pswet/10):
+                two = "w"
+                if Thot >= 22:
+                    three = "a"
+                elif Tmon10 >= 4:
+                    three = "b"
+                else:
+                    three = "c"
+            else:
+                two = "f"
+                if Thot >= 22:
+                    three = "a"
+                elif Tmon10 >= 4:
+                    three = "b"
+                else:
+                    three = "c"
+        elif Thot > 10 and Tcold <= 0:
+            one = "D"
+            if Psdry < 40 and Psdry<(Pwwet/3):
+                two = "s"
+                if Thot >= 22:
+                    three = "a"
+                elif Tmon10 >= 4:
+                    three = "b"
+                elif Tcold < -38:
+                    three = "d"
+                else:
+                    three = "c"
+            elif Pwdry < (Pswet/10):
+                two = "w"
+                if Thot >= 22:
+                    three = "a"
+                elif Tmon10 >= 4:
+                    three = "b"
+                elif Tcold < -38:
+                    three = "d"
+                else:
+                    three = "c"
+            else:
+                two = "f"
+                if Thot >= 22:
+                    three = "a"
+                elif Tmon10 >= 4:
+                    three = "b"
+                elif Tcold < -38:
+                    three = "d"
+                else:
+                    three = "c"
+        elif Thot < 10:
+            one = "E"
+            if Thot > 0:
+                two = "T"
+            else:
+                two = "F"
+                
+        KG = one+two+three
+        KG_all.append(KG)
+        MAPs.append(MAP)
+        MATs.append(MAT)
+    
+    KG_all = pd.DataFrame(KG_all)
+    MAPavg = MAPs.mean()
+    MATavg = MATs.mean()
+    KG_final = KG_all.mode()
+    KG_final = KG_final[0]
+    KG_final = KG_final[0]
+    return KG_final, MAPavg, MATavg
