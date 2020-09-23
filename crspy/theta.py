@@ -28,7 +28,7 @@ def theta(a0, a1, a2, ps, N, N0, lw, wsom):
     """
     return (((a0*ps)/((N/N0)-a1))-(a2*ps)-lw-wsom)
 
-def thetaprocess(df, meta, country, sitenum):
+def thetaprocess(df, meta, country, sitenum, yearlysmfig=True):
     """
     Takes the dataframe provided by previous steps and uses the theta calculations
     to give an estimate of soil moisture. 
@@ -46,6 +46,20 @@ def thetaprocess(df, meta, country, sitenum):
     missing hour could lead to large gaps in 12 hour means. 
     
     Savitsky-Golay (SG filter) is also provided using a 12 hour window. - REMOVED FOR NOW
+    
+    Parameters:
+        df = dataframe - the sites df which is processed prior to this point (found in data/crns_data/final/)
+        
+        meta = dataframe - the metadata.csv file
+        
+        country = string - country code of the site
+            e.g. "USA"
+        
+        sitenum = string - 3 digit sitenumber of the site
+            e.g. "101"
+        
+        yearlysmfig = boolean - whether to output yearly figures when creating time series
+                    default is off.
     """
     print("~~~~~~~~~~~~~ Estimate Soil Moisture ~~~~~~~~~~~~~")
     ###############################################################################
@@ -64,7 +78,7 @@ def thetaprocess(df, meta, country, sitenum):
     #                       Import Data                                           #
     ###############################################################################
     print("Calculating soil moisture along with estimated error...")
-    df = pd.read_csv(nld['defaultdir']+"data/crns_data/FINAL/"+country+"_SITE_"+sitenum+"_final.txt", sep="\t")
+    df = pd.read_csv(nld['defaultdir']+"data/crns_data/final/"+country+"_SITE_"+sitenum+"_final.txt", sep="\t")
     df = df.replace(nld['noval'], np.nan)
     
     # Create MOD count to min and max of error
@@ -126,9 +140,13 @@ def thetaprocess(df, meta, country, sitenum):
     df.fillna(nld['noval'], inplace=True)
     df = df.round(3)
     df = df.drop(['rs10m', 'rs75m', 'rs150m','D86_10m', 'D86_75m', 'D86_150m', 'MOD_CORR_PLUS', 'MOD_CORR_MINUS', 'SM_PLUS_ERR', 'SM_MINUS_ERR'  ], axis=1)
-    
+
     df.to_csv(nld['defaultdir'] + "/data/crns_data/FINAL/"+country+"_SITE_"+sitenum+"_final.txt",
                  header=True, index=False, sep="\t", mode="w")
+    
+    # Add the graphical function to output timeseries 
+    crspy.colourts(country, sitenum, yearlysmfig)
+    
     
     print("Done")
     return df

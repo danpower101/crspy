@@ -94,9 +94,9 @@ def neutcoeffs(df, country, sitenum):
     """
     Rc = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "GV"].item()
     RcCorrval = crspy.RcCorr(Rc)
-    df['finten'] = df.apply(lambda row: crspy.finten(nld['jung_ref'], row['JUNG_COUNT']), axis=1)
+    df['finten_noGV'] = df.apply(lambda row: crspy.finten(nld['jung_ref'], row['JUNG_COUNT']), axis=1)
     
-    df['fintenGV'] = (df['finten'] - 1) * RcCorrval + 1
+    df['finten'] = (df['finten_noGV'] - 1) * RcCorrval + 1
     
     ###############################################################################
     #                       Above Ground Biomass                                  #
@@ -118,7 +118,7 @@ def neutcoeffs(df, country, sitenum):
     """
     Need to create the MODCORR which is corrected neutrons. 
     """
-    df['MOD_CORR'] = df['MOD'] * df['fbar'] * df['fintenGV'] * df['fawv'] * df['fagb']  
+    df['MOD_CORR'] = df['MOD'] * df['fbar'] * df['finten'] * df['fawv'] * df['fagb']  ##!!! MUST CHANGE BACK to *
     df['MOD_CORR'] = df['MOD_CORR'].apply(np.floor)
     
     """
@@ -129,7 +129,7 @@ def neutcoeffs(df, country, sitenum):
     calibration date we could calibrate to this and the changing biomass would be picked 
     up in the regular equations. 
     """
-    df['CALIBCORR'] = df['MOD'] * df['fbar'] * df['fintenGV'] * df['fawv']
+    df['CALIBCORR'] = df['MOD'] * df['fbar'] * df['finten'] * df['fawv']
     df['CALIBCORR'] = df['CALIBCORR'].apply(np.floor)
     
     # Error is the ((standard deviation) / MOD)*MODCORR
@@ -139,7 +139,7 @@ def neutcoeffs(df, country, sitenum):
     # Remove calcs done on missing data
     DTstore = df['DT']
     df = df.reset_index(drop=True)
-    df.loc[df['finc'].isnull(), :] = np.nan
+    df.loc[df['finten'].isnull(), :] = np.nan
     df = df.set_index(DTstore)
     df['DT'] = df.index
     df = df.replace(np.nan,nld['noval'])

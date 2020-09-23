@@ -18,7 +18,7 @@ import math
 import seaborn as sns
 
 
-def colourts(country, sitenum, yearlysm=False):
+def colourts(country, sitenum, yearlysm):
     """
     This function will output a series of plots and figures that can demonstrate
     conditions of a site for easy viewing.
@@ -28,7 +28,7 @@ def colourts(country, sitenum, yearlysm=False):
             e.g. "UK"
         sitenum: string - sitenumber as in metadata
             e.g. "101"
-        yearlysm(optional): boolean - if turned to true it will output yearly 
+        yearlysm: boolean - if turned to true it will output yearly 
                             plots of soil moisture for more granular viewing
     """
     meta = pd.read_csv(nld['defaultdir'] + "/data/metadata.csv")
