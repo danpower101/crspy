@@ -17,6 +17,8 @@ os.chdir(nld['defaultdir'])
 import zipfile
 import urllib
 from bs4 import BeautifulSoup
+import numpy as np
+import math
 
 def isric_variables(lat, lon):
     """
@@ -348,12 +350,19 @@ def fill_metadata(meta, calc_beta=True):
             meta.at[i, 'SOIL_TEXTURE'] = crspy.soil_texture(sand, silt, clay)
             
             #ADD LAND COVER
-            lc = crspy.find_lc(lat, lon)
-            meta.at[i, 'LAND_COVER'] = lc
-            
+            try:
+                lc = crspy.find_lc(lat, lon)
+                meta.at[i, 'LAND_COVER'] = lc
+            except:
+                print("No land cover data found... skipping")
+                pass
             #Add above ground biomass data
-            agb = crspy.get_agb(lat, lon)
-            meta.at[i, 'AGBWEIGHT'] = agb
+            try:
+                agb = crspy.get_agb(lat, lon)
+                meta.at[i, 'AGBWEIGHT'] = agb
+            except:
+                print("No AGB data found... skipping")
+                pass
             
             #ADD KG climate
             kg, meanprecip, meantemp = crspy.KG_func(meta, country, sitenum)
@@ -431,25 +440,72 @@ Uses the ERA5_Land data for each site to give a KG class.
 """
 
 def KG_func(meta, country, sitenum):
+    """
+    Takes in the metadata along with a country/sitenum. Will then check to see
+    if local data is available. If it is, it will calculate Koppen-Geigger climate
+    classes using local data as well as Mean Annual Precipitation (MAP) and 
+    Mean Annual Temperature (MAT). 
+    
+    If local unavailable it will use ERA5_Land data (which needs to be prepared
+    seperately)
+    
+    """
 
     sitecode = country+"_SITE_"+sitenum
     
-    era5 = xr.open_dataset(nld['defaultdir']+"data/era5land/"+nld['era5_filename']+".nc") #
+    ### CHECK IF LOCAL TEMP AND PRECIP IS AVAILABLE
+    dfcheck = nld['defaultdir']+"/data/crns_data/raw/"+str(sitecode)+".txt"
     try:
-        era5site = era5.sel(site=sitecode) 
+        dfcheck = pd.read_csv(dfcheck, sep="\t")
     except:
-        era5site = era5 # If user only has one site it breaks here - this stops that
-    
-    df = pd.DataFrame()
-    df['DT'] = pd.to_datetime(era5site.time.values)
-    df['TEMP'] = era5site.temperature.values-273.15
-    df['PRCP'] = era5site.precipitation.values*1000
-    df['YEAR'] = df['DT'].dt.year
-    df['MONTH'] = df['DT'].dt.month
-    df['HOUR'] = df['DT'].dt.hour
-    df.loc[df['HOUR'] != 0, 'PRCP'] = 0 # to account for era5 accumulation
+        print("No raw data to check... moving along!")
+        dfcheck = pd.DataFrame() # Introduced as if no data currently availabel it will crash (still may want to check on info)
+        dfcheck['E_TEM'] = 1
+        
+    if len(dfcheck['E_TEM'].unique()) > 5: # Arbitary amount to check if there are values attached in E_TEM
+        
+        df = pd.DataFrame()
+        df['DT'] = pd.to_datetime(dfcheck['TIME'])
+        df['TEMP'] = dfcheck['E_TEM']
+        df['PRCP'] = dfcheck['RAIN'] #!!! Change to 'PRECIP' 
+        df['YEAR'] = df['DT'].dt.year
+        df['MONTH'] = df['DT'].dt.month
+        df['HOUR'] = df['DT'].dt.hour
+        
+        #Need to do mastertime process as data is raw
+        df['DT'] = df.DT.dt.floor(freq = 'H')
+        dtcol = df['DT']
+        df.drop(labels=['DT'], axis=1,inplace = True) # Move DT to first col
+        df.insert(0, 'DT', dtcol)
+        df = df.set_index(df.DT)
+        df['dupes'] = df.duplicated(subset="DT")        
+        idx = pd.date_range(df.DT.iloc[0], df.DT.iloc[-1], freq='1H', closed='left')
+        df = df.reindex(idx, fill_value=nld['noval'])
+        df['DT'] = df.index
+        df = df.replace(nld['noval'], np.nan)
+
+    else:
+      
+        era5 = xr.open_dataset(nld['defaultdir']+"data/era5land/"+nld['era5_filename']+".nc") #
+        try:
+            era5site = era5.sel(site=sitecode) 
+        except:
+            if len(era5.site)>1:
+                print("No ERA5-Land data available for "+str(sitecode))
+            else:    
+                era5site = era5 # If user only has one site it breaks here - this stops that
+        
+        df = pd.DataFrame()
+        df['DT'] = pd.to_datetime(era5site.time.values)
+        df['TEMP'] = era5site.temperature.values-273.15
+        df['PRCP'] = era5site.precipitation.values*1000
+        df['YEAR'] = df['DT'].dt.year
+        df['MONTH'] = df['DT'].dt.month
+        df['HOUR'] = df['DT'].dt.hour
+        df.loc[df['HOUR'] != 0, 'PRCP'] = 0 # Remove values not at midnight to account for era5 accumulation
     
     uniqueyears = df['YEAR'].unique()
+    uniqueyears = uniqueyears[~np.isnan(uniqueyears)] # remove nans
     dfdicts = dict()
     
     for i in range(len(uniqueyears)):
@@ -462,7 +518,7 @@ def KG_func(meta, country, sitenum):
     
     KG_all = []
     MAPs = []
-    MATs = []    
+    MATs = []
     for i in range(len(dfdicts)):
         df = dfdicts[i]
         
@@ -478,121 +534,134 @@ def KG_func(meta, country, sitenum):
         Pdry = df['PRCP'].min()
         MAP = df['PRCP'].sum()
         MAT = df['TEMP'].mean()
-        season1 = df.loc[[1,2,3,10,11,12]]
-        season2 = df.loc[[4,5,6,7,8,9]]
-        if season1['TEMP'].mean() > season2['TEMP'].mean():
-            summer = season1.copy()
-            winter = season2.copy()
+        #Check if errors in data
+        if (math.isnan(Thot)) or (math.isnan(Pdry)) or (math.isnan(Tcold)) or (math.isnan(MAP)) or (math.isnan(MAT)):
+            print("Found NaN values so cannot computer KG, skipping year "+str(uniqueyears[i])+"!")
+            continue
         else:
-            summer = season2.copy()
-            winter = season1.copy()
-        Psdry = summer['PRCP'].min()
-        Pwdry = winter['PRCP'].min()
-        Pswet = summer['PRCP'].max()
-        Pwwet = winter['PRCP'].min()
-        #Check for Pthresh
-        if (winter['PRCP'].sum()/MAP)*100 >= 70:
-            Pthresh = 2*MAT
-        elif (summer['PRCP'].sum()/MAP)*100 >= 70:
-            Pthresh = 2*MAT+28
-        else:
-            Pthresh = 2*MAT+14
-        Tmon10 = sum(df['TEMP']>10)
+            pass
         
-        # Big nested conditionals for KG
-        if Tcold >= 18:
-            one = "A"
-            if Pdry >= 60:
-                two = "f"
-            elif Pdry >= 100-(MAP/25):
-                two = "m"
+        try:
+            season1 = df.loc[[1,2,3,10,11,12]]
+            season2 = df.loc[[4,5,6,7,8,9]]
+            if season1['TEMP'].mean() > season2['TEMP'].mean():
+                summer = season1.copy()
+                winter = season2.copy()
             else:
-                two = "w"
-        elif MAP < 10*Pthresh:
-            one = "B"
-            if MAP < 5*Pthresh:
-                two = "W"
-                if MAT >= 18:
-                    three = "h"
-                else:
-                    three = "k"
+                summer = season2.copy()
+                winter = season1.copy()
+            Psdry = summer['PRCP'].min()
+            Pwdry = winter['PRCP'].min()
+            Pswet = summer['PRCP'].max()
+            Pwwet = winter['PRCP'].min()
+            #Check for Pthresh
+            if (winter['PRCP'].sum()/MAP)*100 >= 70:
+                Pthresh = 2*MAT
+            elif (summer['PRCP'].sum()/MAP)*100 >= 70:
+                Pthresh = 2*MAT+28
             else:
-                two = "S"
-                if MAT >= 18:
-                    three = "h"
+                Pthresh = 2*MAT+14
+            Tmon10 = sum(df['TEMP']>10)
+            
+            # Big nested conditionals for KG
+            if Tcold >= 18:
+                one = "A"
+                if Pdry >= 60:
+                    two = "f"
+                elif Pdry >= 100-(MAP/25):
+                    two = "m"
                 else:
-                    three = "k"        
-        elif Thot > 10 and 0<Tcold<18:
-            one = "C"
-            if Psdry < 40 and Psdry<(Pwwet/3):
-                two = "s"
-                if Thot >= 22:
-                    three = "a"
-                elif Tmon10 >= 4:
-                    three = "b"
+                    two = "w"
+            elif MAP < 10*Pthresh:
+                one = "B"
+                if MAP < 5*Pthresh:
+                    two = "W"
+                    if MAT >= 18:
+                        three = "h"
+                    else:
+                        three = "k"
                 else:
-                    three = "c"
-            elif Pwdry < (Pswet/10):
-                two = "w"
-                if Thot >= 22:
-                    three = "a"
-                elif Tmon10 >= 4:
-                    three = "b"
+                    two = "S"
+                    if MAT >= 18:
+                        three = "h"
+                    else:
+                        three = "k"        
+            elif Thot > 10 and 0<Tcold<18:
+                one = "C"
+                if Psdry < 40 and Psdry<(Pwwet/3):
+                    two = "s"
+                    if Thot >= 22:
+                        three = "a"
+                    elif Tmon10 >= 4:
+                        three = "b"
+                    else:
+                        three = "c"
+                elif Pwdry < (Pswet/10):
+                    two = "w"
+                    if Thot >= 22:
+                        three = "a"
+                    elif Tmon10 >= 4:
+                        three = "b"
+                    else:
+                        three = "c"
                 else:
-                    three = "c"
-            else:
-                two = "f"
-                if Thot >= 22:
-                    three = "a"
-                elif Tmon10 >= 4:
-                    three = "b"
+                    two = "f"
+                    if Thot >= 22:
+                        three = "a"
+                    elif Tmon10 >= 4:
+                        three = "b"
+                    else:
+                        three = "c"
+            elif Thot > 10 and Tcold <= 0:
+                one = "D"
+                if Psdry < 40 and Psdry<(Pwwet/3):
+                    two = "s"
+                    if Thot >= 22:
+                        three = "a"
+                    elif Tmon10 >= 4:
+                        three = "b"
+                    elif Tcold < -38:
+                        three = "d"
+                    else:
+                        three = "c"
+                elif Pwdry < (Pswet/10):
+                    two = "w"
+                    if Thot >= 22:
+                        three = "a"
+                    elif Tmon10 >= 4:
+                        three = "b"
+                    elif Tcold < -38:
+                        three = "d"
+                    else:
+                        three = "c"
                 else:
-                    three = "c"
-        elif Thot > 10 and Tcold <= 0:
-            one = "D"
-            if Psdry < 40 and Psdry<(Pwwet/3):
-                two = "s"
-                if Thot >= 22:
-                    three = "a"
-                elif Tmon10 >= 4:
-                    three = "b"
-                elif Tcold < -38:
-                    three = "d"
+                    two = "f"
+                    if Thot >= 22:
+                        three = "a"
+                    elif Tmon10 >= 4:
+                        three = "b"
+                    elif Tcold < -38:
+                        three = "d"
+                    else:
+                        three = "c"
+            elif Thot < 10:
+                one = "E"
+                if Thot > 0:
+                    two = "T"
                 else:
-                    three = "c"
-            elif Pwdry < (Pswet/10):
-                two = "w"
-                if Thot >= 22:
-                    three = "a"
-                elif Tmon10 >= 4:
-                    three = "b"
-                elif Tcold < -38:
-                    three = "d"
-                else:
-                    three = "c"
-            else:
-                two = "f"
-                if Thot >= 22:
-                    three = "a"
-                elif Tmon10 >= 4:
-                    three = "b"
-                elif Tcold < -38:
-                    three = "d"
-                else:
-                    three = "c"
-        elif Thot < 10:
-            one = "E"
-            if Thot > 0:
-                two = "T"
-            else:
-                two = "F"
-                
-        KG = one+two+three
-        KG_all.append(KG)
-        MAPs.append(MAP)
-        MATs.append(MAT)
+                    two = "F"
+                    
+            KG = one+two+three
+            KG_all.append(KG)
+            MAPs.append(MAP)
+            MATs.append(MAT)
+        except:
+            print("Full year of data unavailable for "+str(uniqueyears[i])+" skipping year" )
     
     KG_all = pd.DataFrame(KG_all)
+    MAPs = np.asarray(MAPs)
+    MATs = np.asarray(MATs)
+    
     MAPavg = MAPs.mean()
     MATavg = MATs.mean()
     KG_final = KG_all.mode()
