@@ -15,7 +15,9 @@ References:
     Dietrich, P., Schmidt, U., and Zacharias, S.: Improving calibration and validation 
     of cosmic-ray neutron sensors in the light of spatial sensitivity, 
     Hydrol. Earth Syst. Sci., 21, 5009–5030, https://doi.org/10.5194/hess-21-5009-2017, 2017. 
-       
+     
+    
+    CALIBCORR
 """
 # Load up the packages needed at the begining of the code
 from name_list import nld
@@ -431,7 +433,8 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
             FinalTheta = depthdf.sum()
     
             CalibTheta = FinalTheta['RadWeight'] / FinalTheta['Wr']
-            AvgTheta[i] = CalibTheta 
+            AvgTheta[i] = CalibTheta
+            
             """
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             ~~~~~~~~~~~~~~~~~~~~ WRITE TABLES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -483,11 +486,11 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     for i in range(len(NeutCount)):
         tmp= pd.DataFrame.from_dict(NeutCount[i]) # Find the daily mean neutron count for each calibration day
         tmp= tmp[(tmp['DT'] > str(unidate[i])+' 16:00:00') & (tmp['DT'] <= str(unidate[i])+' 23:00:00')]# COSMOS time of Calib
-        check = float(np.nanmean(tmp['CALIBCORR'])) # !!! change back to MODCORR - fixed but check back
+        check = float(np.nanmean(tmp['MOD_CORR'])) # !!! NEED TO CHANGE BACK TO CALIB CORR
        #Need another catch to stop errors with missing data
         if np.isnan(check):
             tmp= pd.DataFrame.from_dict(NeutCount[i]) # Find the daily mean neutron count for each calibration day
-            avgN[i] = float(np.nanmean(tmp['CALIBCORR']))
+            avgN[i] = float(np.nanmean(tmp['MOD_CORR'])) 
         else:
             avgN[i] = check
     
@@ -588,6 +591,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     R6 = "The lattice water content was " + str(lw)
     R7 = "Unique calibration dates where on: \n" + str(unidate)
     RAvg = "Average neutron counts for each calib day where "+ str(avgN)
+    Rtheta = "The weighted field scale average of theta (from soil samples) was "+str(AvgTheta)
     R8 = "Please see the additional tables which hold calculations for each calibration date"
 
     # Make a folder for the site being processed
@@ -596,7 +600,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     # Write the user report file below
     f = open(country +"_"+sitenum+"_Report.txt", "w")
     f.write(N0R + '\n\n' + R1 + '\n' + R2 + '\n' +  R4 + '\n' + R5 + '\n' + R6 + '\n' + 
-            '\n \n' + R7 +'\n\n' + RAvg + '\n \n' +R8)
+            '\n \n' + R7 +'\n\n' + RAvg + '\n \n' + Rtheta + '\n \n' +R8)
     f.close()
     
     #Write total error table

@@ -118,19 +118,9 @@ def neutcoeffs(df, country, sitenum):
     """
     Need to create the MODCORR which is corrected neutrons. 
     """
-    df['MOD_CORR'] = df['MOD'] * df['fbar'] * df['finten'] * df['fawv'] * df['fagb']  ##!!! MUST CHANGE BACK to *
+    df['MOD_CORR'] = df['MOD'] * df['fbar'] * df['finten'] * df['fawv'] * df['fagb']  
     df['MOD_CORR'] = df['MOD_CORR'].apply(np.floor)
     
-    """
-    Create a seperate correction to calibrate against. This is due to the fact that
-    biomass data is essentially static in this iteration of the tool (very hard to get
-    dynamic data). If we calibrate to mod count adjusted for agb on calibration day it 
-    will leave agb adjustment inside N0. If we were to obtain dynamic agb data for each
-    calibration date we could calibrate to this and the changing biomass would be picked 
-    up in the regular equations. 
-    """
-    df['CALIBCORR'] = df['MOD'] * df['fbar'] * df['finten'] * df['fawv']
-    df['CALIBCORR'] = df['CALIBCORR'].apply(np.floor)
     
     # Error is the ((standard deviation) / MOD)*MODCORR
     df['MOD_ERR'] = (np.sqrt(df['MOD'])/df['MOD']) * df['MOD_CORR']

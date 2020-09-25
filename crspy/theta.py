@@ -28,7 +28,7 @@ def theta(a0, a1, a2, ps, N, N0, lw, wsom):
     """
     return (((a0*ps)/((N/N0)-a1))-(a2*ps)-lw-wsom)
 
-def thetaprocess(df, meta, country, sitenum, yearlysmfig=True):
+def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
     """
     Takes the dataframe provided by previous steps and uses the theta calculations
     to give an estimate of soil moisture. 
@@ -60,6 +60,10 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True):
         
         yearlysmfig = boolean - whether to output yearly figures when creating time series
                     default is off.
+        
+        N0_2 = int - default is None. This has been added to allow comparison of original N0
+                with new N0
+                e.g. None, or 2000
     """
     print("~~~~~~~~~~~~~ Estimate Soil Moisture ~~~~~~~~~~~~~")
     ###############################################################################
@@ -114,6 +118,26 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True):
     # Take 12 hour average
     print("Averaging and writing table...")
     df['SM_12h'] = df['SM'].rolling(nld['smwindow'], min_periods=6).mean() 
+    
+    ################# Introduced to compare N0 (Schron) with N0 (Desilets) #############
+    """
+    This has been introduced in order to compare the two N0 methods. crspy will
+    calculate N0 from calibration data. Adding the original N0 means we can identify
+    how much impact this may have.
+    
+    NOTE: if using N0 from online sources they often "Scale" to a sensor in the network.
+        this needs to be corrected for as crspy does not scale to any sensors:
+            e.g. N0_2 = N0 / SANPE * SCALE (Using COSMOS USA as an example)
+    """
+    if N0_2 != None:
+        df['SM_ogN0'] = df.apply(lambda row: crspy.theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR'], N0_2, lw,
+          soc), axis=1)
+        df['SM_ogN0'] = df['SM_ogN0']        
+        
+        df.loc[df['SM_ogN0'] < sm_min, 'SM_ogN0'] = 0   
+        df.loc[df['SM_ogN0'] > sm_max, 'SM_ogN0'] = sm_max
+        df['SM_12h_ogN0'] = df['SM_ogN0'].rolling(nld['smwindow'], min_periods=6).mean()
+    
     
     #!!! df['SM_12h_SG'] = savgol_filter(df['SM'], 13, 4)#Cannot be used on data with nan values - consider another method?
 

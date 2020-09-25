@@ -9,7 +9,7 @@ Wrapper function to process the data from start to finish
 from name_list import nld
 import crspy
 
-def process_raw_data(filepath, calibrate=True):
+def process_raw_data(filepath, calibrate=True, N0_2 = None):
     """
     A function that wraps all the necessary functions to process data. Can select
     whether to do n0 calibration (e.g. may not be required if previously done).
@@ -23,5 +23,8 @@ def process_raw_data(filepath, calibrate=True):
         N0 = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'N0'].item()
     df = crspy.flag_and_remove(df, N0, country, sitenum)
     df = crspy.QA_plotting(df, country, sitenum, nld['defaultdir'])
-    df = crspy.thetaprocess(df, meta, country, sitenum)
+    if N0_2 != None:
+        df = crspy.thetaprocess(df, meta, country, sitenum, N0_2=N0_2)
+    else:
+        df = crspy.thetaprocess(df, meta, country, sitenum)
     return df, meta
