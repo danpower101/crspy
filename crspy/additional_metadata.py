@@ -222,7 +222,7 @@ def get_agb(lat, lon, tol=0.001):
         
 ###################### Fill in metadata ######################################
         
-def fill_metadata(meta, calc_beta=True):
+def fill_metadata(meta, calc_beta=True, land_cover=True, agb=True):
     
     """
     Reads in meta_data table, uses the latitude and longitude of each site to find
@@ -234,6 +234,9 @@ def fill_metadata(meta, calc_beta=True):
         calc_beta = boolean - whether or not to calculte the beta coefficient
                     included as this requires GV and perhaps a user wants data
                     without this
+        land_cover = boolean - option to turn off the land cover addition in meta_data
+        agb = boolean - option to turn off above ground biomass
+        
     
     REQUIRED COLUMNS IN META_DATA:
         LATITUDE: latitude in degrees
@@ -350,18 +353,25 @@ def fill_metadata(meta, calc_beta=True):
             meta.at[i, 'SOIL_TEXTURE'] = crspy.soil_texture(sand, silt, clay)
             
             #ADD LAND COVER
-            try:
-                lc = crspy.find_lc(lat, lon)
-                meta.at[i, 'LAND_COVER'] = lc
-            except:
-                print("No land cover data found... skipping")
+            if land_cover == True:
+                try:
+                    lc = crspy.find_lc(lat, lon)
+                    meta.at[i, 'LAND_COVER'] = lc
+                except:
+                    print("No land cover data found... skipping")
+                    pass
+            else:
                 pass
-            #Add above ground biomass data
-            try:
-                agb = crspy.get_agb(lat, lon)
-                meta.at[i, 'AGBWEIGHT'] = agb
-            except:
-                print("No AGB data found... skipping")
+            
+            #ADD ABOVE GROUND BIOMASS
+            if agb == True:
+                try:
+                    agb = crspy.get_agb(lat, lon)
+                    meta.at[i, 'AGBWEIGHT'] = agb
+                except:
+                    print("No AGB data found... skipping")
+                    pass
+            else:
                 pass
             
             #ADD KG climate

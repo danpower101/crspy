@@ -486,7 +486,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     for i in range(len(NeutCount)):
         tmp= pd.DataFrame.from_dict(NeutCount[i]) # Find the daily mean neutron count for each calibration day
         tmp= tmp[(tmp['DT'] > str(unidate[i])+' 16:00:00') & (tmp['DT'] <= str(unidate[i])+' 23:00:00')]# COSMOS time of Calib
-        check = float(np.nanmean(tmp['MOD_CORR'])) # !!! NEED TO CHANGE BACK TO CALIB CORR
+        check = float(np.nanmean(tmp['MOD_CORR'])) # 
        #Need another catch to stop errors with missing data
         if np.isnan(check):
             tmp= pd.DataFrame.from_dict(NeutCount[i]) # Find the daily mean neutron count for each calibration day
@@ -533,7 +533,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
             
         plt.close()
         
-        
+
     """
                         N0 Optimisation
     
