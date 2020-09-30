@@ -104,7 +104,7 @@ def flag_and_remove(df, N0, country, sitenum):
     df['FLAG'] = flagseries.values # Place flag vals back into df
     df['DT'] = df.index
     
-    df=df.drop(["DIFF","PRCNTDIFF","INDEX_TMP", "CALIBCORR"], axis =1)
+    df=df.drop(["DIFF","PRCNTDIFF","INDEX_TMP"], axis =1)
     
     insertat = len(df.columns)-3
     dtcol = df['FLAG']
