@@ -94,17 +94,18 @@ def colourts(country, sitenum, yearlysm):
     #CREATE COLOUR TS PLOT
     fig, ax = plt.subplots(figsize=(15,3.75))
     
-    ax.plot(dfdt['SM_12h'], lw=0.1, label='Soil Moisture Volumetric (m^3 m^3)', color='black')
-    ax.set_ylabel("Soil Moisture - Volumetric (%)")
+    ax.plot(dfdt['SM_12h'], lw=0.1, label='Soil Moisture Volumetric (cm$^3$/cm$^3$)', color='black')
+    ax.set_ylabel("Soil Moisture - Volumetric (cm$^3$/cm$^3$)")
     ax.set_xlabel("Date")
     ax.set_title("Soil Moisture over time at "+str(sitename)+", "+str(country))
     
-    ax.plot(dtime, sm, lw=0.1, label='Soil Moisture Volumetric (m^3 m^3)', color='black')
+    ax.plot(dtime, sm, lw=0.1, label='Soil Moisture Volumetric (cm$^3$/cm$^3$)', color='black')
     ax.set_ylim(lower_bound, ymaxplus) # Xlim to below 0 to allow brown colour to show
     for i in range(len(colrange2)):
         ax.fill_between(dtime, lower_bound, sm, where=sm > gradrange[i], facecolor=colrange2[i],
                         alpha=0.2)
     fig.savefig(nld['defaultdir']+"data/figures/"+uniquefolder+"/SM_all.png", dpi=250)
+    fig.close()
 
     
     if yearlysm == True:
@@ -121,16 +122,16 @@ def colourts(country, sitenum, yearlysm):
             gradrange = list(np.arange(0,ymax, steps))
             
             fig, ax = plt.subplots(figsize=(15,3.75))
-            ax.plot(tmp['SM_12h'], lw=0.1, label='Soil Moisture Volumetric (m^3 m^3)', color='black')
-            ax.set_ylabel("Soil Moisture - Volumetric (%)")
+            ax.plot(tmp['SM_12h'], lw=0.1, label='Soil Moisture Volumetric (cm$^3$/cm$^3$)', color='black')
+            ax.set_ylabel("Soil Moisture - Volumetric (cm$^3$/cm$^3$)")
             ax.set_xlabel("Date")
             ax.set_title("Soil Moisture over the year "+str(year)+" at "+str(sitename)+", "+str(country))
             
-            ax.plot(dtime, sm, lw=0.1, label='Soil Moisture Volumetric (m^3 m^3)', color='black')
+            ax.plot(dtime, sm, lw=0.1, label='Soil Moisture Volumetric (cm$^3$/cm$^3$)', color='black')
             ax.set_ylim(lower_bound, ymaxplus) # Xlim to below 0 to allow brown colour to show
             for i in range(len(colrange2)):
                 ax.fill_between(dtime, lower_bound, sm, where=sm > gradrange[i], facecolor=colrange2[i],
                                 alpha=0.2)
             fig.savefig(nld['defaultdir']+"data/figures/"+uniquefolder+"/SM_year_"+str(year)+".png", dpi=250)
-
+            fig.close()
            

@@ -121,7 +121,6 @@ def neutcoeffs(df, country, sitenum):
     df['MOD_CORR'] = df['MOD'] * df['fbar'] * df['finten'] * df['fawv'] * df['fagb']  
     df['MOD_CORR'] = df['MOD_CORR'].apply(np.floor)
     
-    
     # Error is the ((standard deviation) / MOD)*MODCORR
     df['MOD_ERR'] = (np.sqrt(df['MOD'])/df['MOD']) * df['MOD_CORR']
     df['MOD_ERR'] = df['MOD_ERR'].apply(np.floor)

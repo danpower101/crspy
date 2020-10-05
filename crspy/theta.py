@@ -112,12 +112,12 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
     df.loc[df['SM_MINUS_ERR'] < sm_min, 'SM_MINUS_ERR'] = 0   
     df.loc[df['SM_MINUS_ERR'] > sm_max, 'SM_MINUS_ERR'] = sm_max 
     print("Done")
-    
     df['SM_ERROR'] = (df['SM_PLUS_ERR'] - df['SM_MINUS_ERR'])/2 
     
     # Take 12 hour average
     print("Averaging and writing table...")
     df['SM_12h'] = df['SM'].rolling(nld['smwindow'], min_periods=6).mean() 
+     
     
     ################# Introduced to compare N0 (Schron) with N0 (Desilets) #############
     """
@@ -126,8 +126,7 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
     how much impact this may have.
     
     NOTE: if using N0 from online sources they often "Scale" to a sensor in the network.
-        this needs to be corrected for as crspy does not scale to any sensors:
-            e.g. N0_2 = N0 / SANPE * SCALE (Using COSMOS USA as an example)
+        this needs to be corrected for as crspy does not scale to any sensors
     """
     if N0_2 != None:
         df['SM_ogN0'] = df.apply(lambda row: crspy.theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR'], N0_2, lw,
