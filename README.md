@@ -1,6 +1,8 @@
 # Cosmic-Ray Sensor PYthon tool (crspy)
 This tool can process Cosmic Ray Sensor data into soil moisture estimates. It is based on research conducted by many individuals and groups (see references). It is part of a PhD project by Daniel Power - supervised by Rafael Rosolem and Miguel Rico-Ramirez, funded by the Water Informatics, Science and Engineering (WISE CDT) at the University of Bristol - ESPRC Funding EP/L016214/1
 
+Please note: this is a work in progress that is being updated regularly, so bugs or issues may be found. If you have any issues with crspy please do get in touch daniel.power@bristol.ac.uk
+
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 ![Python](https://img.shields.io/badge/python-v3.7+-blue.svg)
 ![Contributions welcome](https://img.shields.io/badge/contributions-welcome-orange.svg)
