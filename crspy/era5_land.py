@@ -112,9 +112,13 @@ def era5landnetcdf(years, months, tol, loadname, savename, ogfile=None):
                 available it will make a new one, if it is available it will concat
                 data to this file. 
                 If none available string should be "None"
-            e.g. nld['defaultdir']+"/data/era5_land/era5land_all_sites.nc" or "None"
+            e.g. nld['defaultdir']+"/data/era5land/era5land_all_sites.nc" or "None"
     
     """
+    if savename == ogfile:
+        print("Sorry, savename and ogfile cannot be the same (due to an xarray issue). Please use a temporary name for the new save and change it after the process has completed.")
+        return
+    
     meta = pd.read_csv(nld['defaultdir']+"/data/metadata.csv")
     meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Add leading zeros
     
@@ -186,6 +190,7 @@ def era5landnetcdf(years, months, tol, loadname, savename, ogfile=None):
                                                    "snow_water_equiv": snowequiv_da})
                         
                         ds_1 = ds_1.combine_first(dstemp)
+                        dstemp.close()
                         print("Writing "+sitename)
                     except:
                         pass

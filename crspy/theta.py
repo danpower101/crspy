@@ -8,13 +8,14 @@ Email: daniel.power@bristol.ac.uk
 """
 
 from name_list import nld
-import os
-os.chdir(nld['defaultdir'])
+
 import pandas as pd
-import crspy
-from crspy import n0_calibration as n0f
 import numpy as np
-#from scipy.signal import savgol_filter 
+
+# crspy funcs
+from crspy.n0_calibration import (rscaled, D86)
+from crspy.graphical_functions import colourts
+
 ###############################################################################
 #                       Add the sitenum/country                               #
 ###############################################################################
@@ -90,15 +91,15 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
     df['MOD_CORR_MINUS'] = df['MOD_CORR'] - df['MOD_ERR']
     
     # Calculate soil moisture - including min and max error 
-    df['SM'] = df.apply(lambda row: crspy.theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR'], N0, lw,
+    df['SM'] = df.apply(lambda row: theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR'], N0, lw,
       soc), axis=1)
     df['SM'] = df['SM']
     
-    df['SM_PLUS_ERR'] = df.apply(lambda row: crspy.theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR_MINUS'], N0, lw,
+    df['SM_PLUS_ERR'] = df.apply(lambda row: theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR_MINUS'], N0, lw,
       soc), axis=1) # Find error (inverse relationship so use MOD minus for soil moisture positive Error)
     df['SM_PLUS_ERR'] = df['SM_PLUS_ERR']  
     
-    df['SM_MINUS_ERR'] = df.apply(lambda row: crspy.theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR_PLUS'], N0, lw,
+    df['SM_MINUS_ERR'] = df.apply(lambda row: theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR_PLUS'], N0, lw,
       soc), axis=1)
     df['SM_MINUS_ERR'] = df['SM_MINUS_ERR']   
     
@@ -129,7 +130,7 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
         this needs to be corrected for as crspy does not scale to any sensors
     """
     if N0_2 != None:
-        df['SM_ogN0'] = df.apply(lambda row: crspy.theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR'], N0_2, lw,
+        df['SM_ogN0'] = df.apply(lambda row: theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR'], N0_2, lw,
           soc), axis=1)
         df['SM_ogN0'] = df['SM_ogN0']        
         
@@ -141,13 +142,13 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
     #!!! df['SM_12h_SG'] = savgol_filter(df['SM'], 13, 4)#Cannot be used on data with nan values - consider another method?
 
     # Depth calcs - use new Schron style. Depth is given considering radius and bd
-    df['rs10m'] = df.apply(lambda row: n0f.rscaled(10, row['PRESS'], hveg, (row['SM']/100)), axis=1)
-    df['rs75m'] = df.apply(lambda row: n0f.rscaled(75, row['PRESS'], hveg, (row['SM']/100)), axis=1)
-    df['rs150m'] = df.apply(lambda row: n0f.rscaled(150, row['PRESS'], hveg, (row['SM']/100)), axis=1)
+    df['rs10m'] = df.apply(lambda row: rscaled(10, row['PRESS'], hveg, (row['SM']/100)), axis=1)
+    df['rs75m'] = df.apply(lambda row: rscaled(75, row['PRESS'], hveg, (row['SM']/100)), axis=1)
+    df['rs150m'] = df.apply(lambda row: rscaled(150, row['PRESS'], hveg, (row['SM']/100)), axis=1)
     
-    df['D86_10m'] = df.apply(lambda row: n0f.D86(row['rs10m'], bd, (row['SM']/100)), axis=1)
-    df['D86_75m'] = df.apply(lambda row: n0f.D86(row['rs75m'], bd, (row['SM']/100)), axis=1)
-    df['D86_150m'] = df.apply(lambda row: n0f.D86(row['rs150m'], bd, (row['SM']/100)), axis=1)
+    df['D86_10m'] = df.apply(lambda row: D86(row['rs10m'], bd, (row['SM']/100)), axis=1)
+    df['D86_75m'] = df.apply(lambda row: D86(row['rs75m'], bd, (row['SM']/100)), axis=1)
+    df['D86_150m'] = df.apply(lambda row: D86(row['rs150m'], bd, (row['SM']/100)), axis=1)
     df['D86avg'] = (df['D86_10m'] + df['D86_75m'] + df['D86_150m']) /3
     df['D86avg_12h'] = df['D86avg'].rolling(window=nld['smwindow']).mean() 
     
@@ -168,7 +169,7 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
                  header=True, index=False, sep="\t", mode="w")
     
     # Add the graphical function to output timeseries 
-    crspy.colourts(country, sitenum, yearlysmfig)
+    colourts(country, sitenum, yearlysmfig)
     
     
     print("Done")

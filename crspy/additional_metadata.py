@@ -6,19 +6,22 @@ Created on Mon May 18 11:12:09 2020
 @email: daniel.power@bristol.ac.uk
 """
 
-import requests
-import crspy
 from name_list import nld
+import requests
 import xarray as xr
 import pandas as pd
 import cdsapi
 import os
-os.chdir(nld['defaultdir'])
 import zipfile
 import urllib
 from bs4 import BeautifulSoup
 import numpy as np
 import math
+
+# crspy funcs
+from crspy.gen_funcs import getlistoffiles
+from crspy.mass_atten import betacoeff
+
 
 def isric_variables(lat, lon):
     """
@@ -186,7 +189,7 @@ def dl_land_cover():
 
     
 def find_lc(lat, lon):
-    landdat = crspy.getlistoffiles(nld['defaultdir'] + "/data/land_cover_data/")
+    landdat = getlistoffiles(nld['defaultdir'] + "/data/land_cover_data/")
     
     #Open file
     tmp = xr.open_dataset(landdat[0])
@@ -218,185 +221,8 @@ def get_agb(lat, lon, tol=0.001):
         agb = ds.sel(lat=lat, lon=lon, method='nearest', tolerance = tol).agb.values[0] # given in megagrams per hectare
         agb = agb/10 #convert to kg/m2
     return agb
-        
-        
-###################### Fill in metadata ######################################
-        
-def fill_metadata(meta, calc_beta=True, land_cover=True, agb=True):
-    
-    """
-    Reads in meta_data table, uses the latitude and longitude of each site to find
-    metadata from the ISRIC soil database, as well as calculating reference pressure
-    and beta coefficient.
-    
-    Parameters:
-        meta = csv file containing the metadata for each site (listed below)
-        calc_beta = boolean - whether or not to calculte the beta coefficient
-                    included as this requires GV and perhaps a user wants data
-                    without this
-        land_cover = boolean - option to turn off the land cover addition in meta_data
-        agb = boolean - option to turn off above ground biomass
-        
-    
-    REQUIRED COLUMNS IN META_DATA:
-        LATITUDE: latitude in degrees
-            e.g. 51
-        LONGITUDE: longitude in degrees
-            e.g. 51.1
-        ELEV: elevation of site in metres
-            e.g. 201(NOT REQUIRED IF CALC_BETA TURNED OFF)
-        GV: cutoff rigidity of site (can be obtained at http://crnslab.org/util/rigidity.php )
-            e.g. 2.2 (NOT REQUIRED IF CALC_BETA TURNED OFF)
-    """
-    
-    meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Ensure leading zeros
-    
-    
-    for i in range(len(meta['LATITUDE'])):
-        print(i)
-        
-        try:
-            lat = meta['LATITUDE'][i]
-            lon = meta['LONGITUDE'][i]
-            country = meta['COUNTRY'][i]
-            sitenum = meta['SITENUM'][i]
-            
-            resdict = crspy.isric_variables(lat, lon)
-            wrb = crspy.isric_wrb_class(lat, lon)
-            
-                    #Bulk Density
-            bdod = crspy.isric_depth_mean(resdict, 0)
-            bdod = bdod/100 # convert to decimal fraction
-            bdoduc = crspy.isric_depth_uc(resdict, 0)
-            bdoduc = bdoduc/100
-            
-            #Cation Exchange Capacity
-            cec = crspy.isric_depth_mean(resdict, 1)
-            cecuc = crspy.isric_depth_uc(resdict, 1)
-        
-            # Coarse Fragment Volume
-            cfvo = crspy.isric_depth_mean(resdict, 2)
-            cfvo = cfvo/10 # convert to decimal fraction
-            cfvouc = crspy.isric_depth_uc(resdict, 2)
-            cfvouc = cfvouc/10
-        
-            # Clay as prcnt
-            clay = crspy.isric_depth_mean(resdict, 3)
-            clay = clay/1000 # convert to decimal fraction
-            clayuc = crspy.isric_depth_uc(resdict, 3)
-            clayuc = clayuc/1000
-        
-            # Nitrogen
-            nitro = crspy.isric_depth_mean(resdict, 4)
-            nitro = nitro/100 # convert to g/kg
-            nitrouc = crspy.isric_depth_uc(resdict, 4)
-            nitrouc = nitrouc/100
-        
-            #OCD CURRENTLY DATA APPEARS TO ALWAYS BE NONETYPE - REMOVED
-           # ocd = smoon.isric_depth_mean(resdict, 5)
-           # ocd = ocd/1000 # convert to kg/dm**3
-           # ocduc = smoon.isric_depth_uc(resdict, 5)
-           # ocduc = ocduc/1000
-        
-            #phh20
-            phh20 = crspy.isric_depth_mean(resdict, 6)
-            phh20 = phh20/10 # convert to pH
-            phh20uc = crspy.isric_depth_uc(resdict, 6)
-            phh20uc = phh20uc/10
-        
-            #Sand
-            sand = crspy.isric_depth_mean(resdict, 7)
-            sand = sand/1000 # convert to decimal fraction
-            sanduc = crspy.isric_depth_uc(resdict, 7)
-            sanduc = sanduc/1000
-        
-            #Silt
-            silt = crspy.isric_depth_mean(resdict, 8)
-            silt = silt/1000 # convert to decimal fraction
-            siltuc = crspy.isric_depth_uc(resdict, 8)
-            siltuc = siltuc/1000    
-            
-            #SOC
-            soc  = crspy.isric_depth_mean(resdict, 9)
-            soc = soc/1000 # convert to decimal fraction
-            socuc = crspy.isric_depth_uc(resdict, 9)
-            socuc = socuc/1000
-            
-            meta.at[i, 'BD_ISRIC'] = bdod
-            meta.at[i, 'BD_ISRIC_UC'] = bdoduc
-            
-            meta.at[i, 'SOC_ISRIC'] = soc
-            meta.at[i, 'SOC_ISRIC_UC'] = socuc
-            
-            meta.at[i, 'pH_H20_ISRIC'] = phh20
-            meta.at[i, 'pH_H20_ISRIC_UC'] = phh20uc
-            
-            meta.at[i, 'CEC_ISRIC'] = cec
-            meta.at[i, 'CEC_ISRIC_UC'] = cecuc
-            
-            meta.at[i, 'CFVO_ISRIC'] = cfvo
-            meta.at[i, 'CFVO_ISRIC_UC'] = cfvouc
-            
-            meta.at[i, 'NITROGEN_ISRIC'] = nitro
-            meta.at[i, 'NITROGEN_ISRIC_UC'] = nitrouc
-            
-            meta.at[i, 'SAND_ISRIC'] = sand
-            meta.at[i, 'SAND_ISRIC_UC'] = sanduc
-            
-            meta.at[i, 'SILT_ISRIC'] = silt
-            meta.at[i, 'SILT_ISRIC_UC'] = siltuc
-            
-            meta.at[i, 'CLAY_ISRIC'] = clay
-            meta.at[i, 'CLAY_ISRIC_UC'] = clayuc
-            
-            meta.at[i, 'WRB_ISRIC'] = wrb
-            meta.at[i, 'SOIL_TEXTURE'] = crspy.soil_texture(sand, silt, clay)
-            
-            #ADD LAND COVER
-            if land_cover == True:
-                try:
-                    lc = crspy.find_lc(lat, lon)
-                    meta.at[i, 'LAND_COVER'] = lc
-                except:
-                    print("No land cover data found... skipping")
-                    pass
-            else:
-                pass
-            
-            #ADD ABOVE GROUND BIOMASS
-            if agb == True:
-                try:
-                    agb = crspy.get_agb(lat, lon)
-                    meta.at[i, 'AGBWEIGHT'] = agb
-                except:
-                    print("No AGB data found... skipping")
-                    pass
-            else:
-                pass
-            
-            #ADD KG climate
-            kg, meanprecip, meantemp = crspy.KG_func(meta, country, sitenum)
-            meta.at[i, 'KG_CLIMATE'] = kg
-            meta.at[i, 'MEAN_ANNUAL_PRECIP'] = meanprecip
-            meta.at[i, 'MEAN_ANNUAL_TEMP'] = meantemp
-        except:
-            pass
-        
 
-
-    if calc_beta == True:
-        print("Calculating Beta Coeff...")
-    
-        meta['BETA_COEFF'], meta['REFERENCE_PRESS'] = crspy.betacoeff(meta['LATITUDE'],
-            meta['ELEV'], meta['GV'])
-    else:
-        pass
-    
-    meta.to_csv(nld['defaultdir'] + "/data/metadata.csv", header=True, index=False, mode='w')
-    
-    return meta
-
-
+############################## Get Jungfraujoch Data ##########################
 def nmdb_get(startdate, enddate):
     """
     Will collect data for Junfraujoch station that is required to calculate fsol.
@@ -440,7 +266,7 @@ def nmdb_get(startdate, enddate):
     dfdict = dict(zip(dates, count))
     
     return dfdict
-
+        
 ############## Koppen Gieger classification ###################################
 """
 Based off the paper Peel et al., (2007) https://hess.copernicus.org/articles/11/1633/2007/hess-11-1633-2007.pdf
@@ -677,4 +503,181 @@ def KG_func(meta, country, sitenum):
     KG_final = KG_all.mode()
     KG_final = KG_final[0]
     KG_final = KG_final[0]
-    return KG_final, MAPavg, MATavg
+    return KG_final, MAPavg, MATavg        
+###################### Fill in metadata ######################################
+        
+def fill_metadata(meta, calc_beta=True, land_cover=True, agb=True):
+    
+    """
+    Reads in meta_data table, uses the latitude and longitude of each site to find
+    metadata from the ISRIC soil database, as well as calculating reference pressure
+    and beta coefficient.
+    
+    Parameters:
+        meta = csv file containing the metadata for each site (listed below)
+        calc_beta = boolean - whether or not to calculte the beta coefficient
+                    included as this requires GV and perhaps a user wants data
+                    without this
+        land_cover = boolean - option to turn off the land cover addition in meta_data
+        agb = boolean - option to turn off above ground biomass
+        
+    
+    REQUIRED COLUMNS IN META_DATA:
+        LATITUDE: latitude in degrees
+            e.g. 51
+        LONGITUDE: longitude in degrees
+            e.g. 51.1
+        ELEV: elevation of site in metres
+            e.g. 201(NOT REQUIRED IF CALC_BETA TURNED OFF)
+        GV: cutoff rigidity of site (can be obtained at http://crnslab.org/util/rigidity.php )
+            e.g. 2.2 (NOT REQUIRED IF CALC_BETA TURNED OFF)
+    """
+    
+    meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Ensure leading zeros
+    
+    
+    for i in range(len(meta['LATITUDE'])):
+        print(i)
+        
+        try:
+            lat = meta['LATITUDE'][i]
+            lon = meta['LONGITUDE'][i]
+            country = meta['COUNTRY'][i]
+            sitenum = meta['SITENUM'][i]
+            
+            resdict = isric_variables(lat, lon)
+            wrb = isric_wrb_class(lat, lon)
+            
+                    #Bulk Density
+            bdod = isric_depth_mean(resdict, 0)
+            bdod = bdod/100 # convert to decimal fraction
+            bdoduc = isric_depth_uc(resdict, 0)
+            bdoduc = bdoduc/100
+            
+            #Cation Exchange Capacity
+            cec = isric_depth_mean(resdict, 1)
+            cecuc = isric_depth_uc(resdict, 1)
+        
+            # Coarse Fragment Volume
+            cfvo = isric_depth_mean(resdict, 2)
+            cfvo = cfvo/10 # convert to decimal fraction
+            cfvouc = isric_depth_uc(resdict, 2)
+            cfvouc = cfvouc/10
+        
+            # Clay as prcnt
+            clay = isric_depth_mean(resdict, 3)
+            clay = clay/1000 # convert to decimal fraction
+            clayuc = isric_depth_uc(resdict, 3)
+            clayuc = clayuc/1000
+        
+            # Nitrogen
+            nitro = isric_depth_mean(resdict, 4)
+            nitro = nitro/100 # convert to g/kg
+            nitrouc = isric_depth_uc(resdict, 4)
+            nitrouc = nitrouc/100
+        
+            #OCD CURRENTLY DATA APPEARS TO ALWAYS BE NONETYPE - REMOVED
+           # ocd = isric_depth_mean(resdict, 5)
+           # ocd = ocd/1000 # convert to kg/dm**3
+           # ocduc = isric_depth_uc(resdict, 5)
+           # ocduc = ocduc/1000
+        
+            #phh20
+            phh20 = isric_depth_mean(resdict, 6)
+            phh20 = phh20/10 # convert to pH
+            phh20uc = isric_depth_uc(resdict, 6)
+            phh20uc = phh20uc/10
+        
+            #Sand
+            sand = isric_depth_mean(resdict, 7)
+            sand = sand/1000 # convert to decimal fraction
+            sanduc = isric_depth_uc(resdict, 7)
+            sanduc = sanduc/1000
+        
+            #Silt
+            silt = isric_depth_mean(resdict, 8)
+            silt = silt/1000 # convert to decimal fraction
+            siltuc = isric_depth_uc(resdict, 8)
+            siltuc = siltuc/1000    
+            
+            #SOC
+            soc  = isric_depth_mean(resdict, 9)
+            soc = soc/1000 # convert to decimal fraction
+            socuc = isric_depth_uc(resdict, 9)
+            socuc = socuc/1000
+            
+            meta.at[i, 'BD_ISRIC'] = bdod
+            meta.at[i, 'BD_ISRIC_UC'] = bdoduc
+            
+            meta.at[i, 'SOC_ISRIC'] = soc
+            meta.at[i, 'SOC_ISRIC_UC'] = socuc
+            
+            meta.at[i, 'pH_H20_ISRIC'] = phh20
+            meta.at[i, 'pH_H20_ISRIC_UC'] = phh20uc
+            
+            meta.at[i, 'CEC_ISRIC'] = cec
+            meta.at[i, 'CEC_ISRIC_UC'] = cecuc
+            
+            meta.at[i, 'CFVO_ISRIC'] = cfvo
+            meta.at[i, 'CFVO_ISRIC_UC'] = cfvouc
+            
+            meta.at[i, 'NITROGEN_ISRIC'] = nitro
+            meta.at[i, 'NITROGEN_ISRIC_UC'] = nitrouc
+            
+            meta.at[i, 'SAND_ISRIC'] = sand
+            meta.at[i, 'SAND_ISRIC_UC'] = sanduc
+            
+            meta.at[i, 'SILT_ISRIC'] = silt
+            meta.at[i, 'SILT_ISRIC_UC'] = siltuc
+            
+            meta.at[i, 'CLAY_ISRIC'] = clay
+            meta.at[i, 'CLAY_ISRIC_UC'] = clayuc
+            
+            meta.at[i, 'WRB_ISRIC'] = wrb
+            meta.at[i, 'SOIL_TEXTURE'] = soil_texture(sand, silt, clay)
+            
+            #ADD LAND COVER
+            if land_cover == True:
+                try:
+                    lc = find_lc(lat, lon)
+                    meta.at[i, 'LAND_COVER'] = lc
+                except:
+                    print("No land cover data found... skipping")
+                    pass
+            else:
+                pass
+            
+            #ADD ABOVE GROUND BIOMASS
+            if agb == True:
+                try:
+                    agb = get_agb(lat, lon)
+                    meta.at[i, 'AGBWEIGHT'] = agb
+                except:
+                    print("No AGB data found... skipping")
+                    pass
+            else:
+                pass
+            
+            #ADD KG climate
+            kg, meanprecip, meantemp = KG_func(meta, country, sitenum)
+            meta.at[i, 'KG_CLIMATE'] = kg
+            meta.at[i, 'MEAN_ANNUAL_PRECIP'] = meanprecip
+            meta.at[i, 'MEAN_ANNUAL_TEMP'] = meantemp
+        except:
+            pass
+        
+
+
+    if calc_beta == True:
+        print("Calculating Beta Coeff...")
+    
+        meta['BETA_COEFF'], meta['REFERENCE_PRESS'] = betacoeff(meta['LATITUDE'],
+            meta['ELEV'], meta['GV'])
+    else:
+        pass
+    
+    meta.to_csv(nld['defaultdir'] + "/data/metadata.csv", header=True, index=False, mode='w')
+    
+    return meta
+
+

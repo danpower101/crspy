@@ -16,11 +16,13 @@ os.chdir(nld['defaultdir'])
 import pandas as pd # Pandas for dataframe
 import numpy as np
 import re
-import crspy
 import datetime
 import xarray as xr
 import pylab
 pylab.show()
+
+from crspy.additional_metadata import nmdb_get
+from crspy.neutron_correction_funcs import (es, ea, dew2vap)
 
 ###############################################################################
 #                       Get list of files                                     #
@@ -246,12 +248,12 @@ def prepare_data(fileloc):
         df = df.replace(nld['noval'], np.nan)
         
         if rh == False:
-            df['VP'] = df.apply(lambda row: crspy.dew2vap(row['DEWPOINT_TEMP']), axis=1) # VP is in kPA
+            df['VP'] = df.apply(lambda row: dew2vap(row['DEWPOINT_TEMP']), axis=1) # VP is in kPA
             df['VP'] = df['VP']*1000 # Convert to Pascals
         else:
-            df['es'] = df.apply(lambda row: crspy.es(row['TEMP']), axis=1) # Output is in hectopascals
+            df['es'] = df.apply(lambda row: es(row['TEMP']), axis=1) # Output is in hectopascals
             df['es'] = df['es']*100  # Convert to Pascals
-            df['VP'] = df.apply(lambda row: crspy.ea(row['es'], row['E_RH']), axis=1)
+            df['VP'] = df.apply(lambda row: ea(row['es'], row['E_RH']), axis=1)
             
             
         print("Done")
@@ -263,9 +265,9 @@ def prepare_data(fileloc):
         
         df['TEMP'] = df['E_TEM']
         
-        df['es'] = df.apply(lambda row: crspy.es(row['TEMP']), axis=1) # Output is in hectopascals
+        df['es'] = df.apply(lambda row: es(row['TEMP']), axis=1) # Output is in hectopascals
         df['es'] = df['es']*100  # Convert to Pascals
-        df['VP'] = df.apply(lambda row: crspy.ea(row['es'], row['E_RH']), axis=1)
+        df['VP'] = df.apply(lambda row: ea(row['es'], row['E_RH']), axis=1)
         print("Cannot load era5_land data. Please download data as it is needed.")
 
     ###############################################################################
@@ -274,7 +276,7 @@ def prepare_data(fileloc):
     print("Getting Jungfraujoch counts...")
    
     
-    nmdbdict = crspy.nmdb_get(startdate, enddate)
+    nmdbdict = nmdb_get(startdate, enddate)
     df['JUNG_COUNT'] = df['DT'].map(nmdbdict)
     df['JUNG_COUNT'] = df['JUNG_COUNT'].astype(float)
     print("Done")

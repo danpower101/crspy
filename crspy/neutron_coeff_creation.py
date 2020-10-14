@@ -28,11 +28,21 @@ Citations:
 """
 from name_list import nld
 import os
-os.chdir(nld['defaultdir']) #set wd to find funcs
 import math
 import pandas as pd # Pandas for dataframe
 import numpy as np
-import crspy
+
+# crspy funcs
+from crspy.neutron_correction_funcs import (
+        pv,
+        humfact,
+        pressfact_B,
+        finten,
+        RcCorr,
+        agb,              
+        )
+
+os.chdir(nld['defaultdir']) #set wd
 
 def neutcoeffs(df, country, sitenum):
     """
@@ -65,9 +75,9 @@ def neutcoeffs(df, country, sitenum):
     """
     # Define Constant
     
-    df['pv'] = df.apply(lambda row: crspy.pv(row['VP'], row['TEMP']), axis=1) # VP is in Pascals and TEMP is in Cel
+    df['pv'] = df.apply(lambda row: pv(row['VP'], row['TEMP']), axis=1) # VP is in Pascals and TEMP is in Cel
     df['pv'] = df['pv']*1000 # convert Kg m-3 to g m-3
-    df["fawv"] = df.apply(lambda row: crspy.humfact(row['pv'], nld['pv0']), axis=1)
+    df["fawv"] = df.apply(lambda row: humfact(row['pv'], nld['pv0']), axis=1)
 
     
     ###############################################################################
@@ -79,7 +89,7 @@ def neutcoeffs(df, country, sitenum):
     """
     refpres = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "REFERENCE_PRESS"].item()
     beta = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "BETA_COEFF"].item()
-    df['fbar'] = df.apply(lambda row: crspy.pressfact_B(row['PRESS'], beta, refpres), axis = 1)
+    df['fbar'] = df.apply(lambda row: pressfact_B(row['PRESS'], beta, refpres), axis = 1)
     
     
 
@@ -93,8 +103,8 @@ def neutcoeffs(df, country, sitenum):
     See Hawdon et al (2014) for full explanation - equation taken from that paper.
     """
     Rc = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "GV"].item()
-    RcCorrval = crspy.RcCorr(Rc)
-    df['finten_noGV'] = df.apply(lambda row: crspy.finten(nld['jung_ref'], row['JUNG_COUNT']), axis=1)
+    RcCorrval = RcCorr(Rc)
+    df['finten_noGV'] = df.apply(lambda row: finten(nld['jung_ref'], row['JUNG_COUNT']), axis=1)
     
     df['finten'] = (df['finten_noGV'] - 1) * RcCorrval + 1
     
@@ -110,7 +120,7 @@ def neutcoeffs(df, country, sitenum):
     if math.isnan(agbval): # Introduce catch incase info isn't available
         df['fagb'] = 1
     else:
-        df['fagb'] = df.apply(lambda row: crspy.agb(agbval), axis = 1)
+        df['fagb'] = df.apply(lambda row: agb(agbval), axis = 1)
         
     ###############################################################################
     #                        Corrected Neutrons                                   #

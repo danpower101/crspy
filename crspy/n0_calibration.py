@@ -17,7 +17,6 @@ References:
     Hydrol. Earth Syst. Sci., 21, 5009–5030, https://doi.org/10.5194/hess-21-5009-2017, 2017. 
      
     
-    CALIBCORR
 """
 # Load up the packages needed at the begining of the code
 from name_list import nld
@@ -26,16 +25,17 @@ import re
 import os
 import numpy as np
 import math
-os.chdir(nld['defaultdir'])
-import crspy
-#import neutron_correction_funcs as ncf
-
 import matplotlib.pyplot as plt
 import warnings
+
+# crspy funcs
+from crspy.neutron_correction_funcs import pv
+
 warnings.filterwarnings("ignore", category=RuntimeWarning) #Brought in to stop warning around missing data
+
 """ 
-Functions
-         
+Functions from Shcron et al 2017
+     
 """
 
 def WrX (r, x, y) :
@@ -407,7 +407,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
             day1temp = avgT[i]
             day1vp = avgVP[i]
 
-            day1hum = crspy.pv(day1vp, day1temp)# Calculate absolute humidity (output will be kg m-3).
+            day1hum = pv(day1vp, day1temp)# Calculate absolute humidity (output will be kg m-3).
             day1hum = day1hum * 1000 # Multiply by 1000 to convert to g m-3 which is used by functions
     
             depthdf['day1hum'] = day1hum # Need to add value to each row for .loc application

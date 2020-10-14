@@ -10,7 +10,6 @@ Collection for graphical representation of data. Ways to show data.
 
 from name_list import nld
 import os
-os.chdir(nld['defaultdir'])
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -105,7 +104,7 @@ def colourts(country, sitenum, yearlysm):
         ax.fill_between(dtime, lower_bound, sm, where=sm > gradrange[i], facecolor=colrange2[i],
                         alpha=0.2)
     fig.savefig(nld['defaultdir']+"data/figures/"+uniquefolder+"/SM_all.png", dpi=250)
-    fig.close()
+
 
     
     if yearlysm == True:
@@ -133,5 +132,5 @@ def colourts(country, sitenum, yearlysm):
                 ax.fill_between(dtime, lower_bound, sm, where=sm > gradrange[i], facecolor=colrange2[i],
                                 alpha=0.2)
             fig.savefig(nld['defaultdir']+"data/figures/"+uniquefolder+"/SM_year_"+str(year)+".png", dpi=250)
-            fig.close()
+            
            
