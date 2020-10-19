@@ -513,17 +513,11 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
             RelerrDict[i] = reler['RelErr']
             
         
-            plt.plot(reler, label = str(unidate[i]))
-            plt.yscale('log')
-            plt.xlabel('N0')
-            plt.ylabel('Relative Error (log scale)')
-            plt.title('Relative Error plot on log scale')
-            plt.legend()
+           
             
             # Write a csv for the error for this calibration day
             os.chdir(nld['defaultdir'] +"/data/n0_calibration/"+uniquefolder) # Change wd to folder
             
-            plt.savefig("Relative_Error_Plot.png")
             
             reler['N0'] = range(0,10000) # Add N0 for csv write
             
@@ -531,7 +525,6 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
                        header=True, index=False,  mode='w')
             os.chdir(nld['defaultdir']) # Change back
             
-        plt.close()
         
 
     """
@@ -562,6 +555,17 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
 
     meta.to_csv(nld['defaultdir'] + "/data/metadata.csv", header=True, index=False, mode='w')
 	
+    plt.plot(totalerror['RelErr'], label = str(unidate[i]))
+    plt.yscale('log')
+    plt.xlabel('N0')
+    plt.ylabel('Sum Relative Error (log scale)')
+    plt.title('Sum Relative Error plot on log scale across all calibration days')
+    plt.legend()
+    os.chdir(nld['defaultdir'] +"/data/n0_calibration/"+uniquefolder) # Change wd to folder        
+    plt.savefig("Relative_Error_Plot.png")
+    os.chdir(nld['defaultdir'])
+    plt.close()
+    
     """
                             User Report
                             

@@ -210,10 +210,25 @@ def prepare_data(fileloc):
         era5time = pd.to_datetime(era5site.time.values)
         
         temp_dict = dict(zip(era5time, era5site.temperature.values-273.15)) # minus 273.15 to convert to celcius as era5 stores it as kelvin
-        prcp_dict = dict(zip(era5time, era5site.precipitation.values*1000)) # prcp is in meteres in ERA5 so convert to mm
         dptemp_dict = dict(zip(era5time, era5site.dewpoint_temperature.values-273.15))    
         press_dict = dict(zip(era5time, era5site.pressure.values*0.01)) # Want to check on this
-        swe_dict = dict(zip(era5time,era5site.snow_water_equiv.values*1000))      
+        swe_dict = dict(zip(era5time,era5site.snow_water_equiv.values*1000))
+        prcp_dict = dict(zip(era5time, era5site.precipitation.values*1000)) # prcp is in meteres in ERA5 so convert to mm
+
+      
+        #Introduced here to "correct" for the way ERA5_Land accumulates precipitation over 24 hours
+        tmp = pd.DataFrame()
+        tmp['DT'] = era5time
+        tmp['RAIN'] = tmp['DT'].map(prcp_dict)
+        tmp['DT'] = pd.to_datetime(tmp['DT'])
+        tmp['YEAR'] = tmp['DT'].dt.date
+        tmp['HOUR'] = tmp['DT'].dt.hour
+        tmp['RAINSHIFT'] = tmp['RAIN'].shift(1)
+        tmp['HOURLYRAIN'] = 0
+        tmp['TRUERAIN'] = tmp['RAIN'] - tmp['RAINSHIFT']
+        tmp.loc[tmp['HOUR'] == 1, ['TRUERAIN']] = tmp['RAIN']            
+        
+        prcp_dict = dict(zip(tmp['DT'], tmp['TRUERAIN']))
         
         # Add the ERA5_Land data 
         if df.E_TEM.mean() == nld['noval']:
@@ -236,8 +251,6 @@ def prepare_data(fileloc):
             meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY'] == country), 'RH_DATA_SOURCE'] = 'Local'
             rh = True
             
-            
-        
         df['DEWPOINT_TEMP'] = df['DT'].map(dptemp_dict)   
         df['SWE'] = df['DT'].map(swe_dict)
         df['ERA5L_PRESS'] = df['DT'].map(press_dict)
