@@ -60,7 +60,7 @@ def flipif(filename):
     if m2:
         sitenum = m2.group(1)
       
-    tmp = pd.read_csv(nld['defaultdir'] + "/data/crns_data/raw/"+country+"_SITE_" + sitenum+".txt", sep="\s+")
+    tmp = pd.read_csv(nld['defaultdir'] + "/data/crns_data/raw/"+country+"_SITE_" + sitenum+".txt", sep="\t")
     
     if tmp['TIME'].iloc[0] > tmp['TIME'].iloc[-1]:
         tmp = tmp.iloc[::-1]

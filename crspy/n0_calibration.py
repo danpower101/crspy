@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Jun  3 17:17:33 2019
-
 @author: Daniel Power
-
 The below code is based on the work of Schron et al., (2017). This work established
 a new weighting scheme to be applied in the calibration of Cosmic Ray Neutron Sensors.
-
 The functions have been taken from the supplementary data.  
-
 References:
     Schrön, M., Köhli, M., Scheiffele, L., Iwema, J., Bogena, H. R., Lv, L., Martini, E.,
     Baroni, G., Rosolem, R., Weimar, J., Mai, J., Cuntz, M., Rebmann, C., Oswald, S. E.,
@@ -480,8 +476,15 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     
     NeutCount = dict() # Create a dict for appending time series readings for each calib day
     for i in range(numdays): # Create a df for each day with the CRNS readings
-        NeutCount[i] = tmp.loc[tmp['DATE'] == unidate[i]] # Create a dictionary df of neutron time series data for each calibration day
-    
+        tmpneut = tmp.loc[tmp['DATE'] == unidate[i]] # Create a dictionary df of neutron time series data for each calibration day
+        NeutCount[i] = tmpneut
+                    # Write a csv for the error for this calibration day
+        os.chdir(nld['defaultdir'] +"/data/n0_calibration/"+uniquefolder) # Change wd to folder
+
+        tmpneut.to_csv(country + '_SITE_'+sitenum+'_MOD_AVG_TABLE_' + str(unidate[i]) + '.csv',
+                       header=True, index=False,  mode='w')
+        os.chdir(nld['defaultdir']) # Change back
+            
     avgN = dict()
     for i in range(len(NeutCount)):
         tmp= pd.DataFrame.from_dict(NeutCount[i]) # Find the daily mean neutron count for each calibration day

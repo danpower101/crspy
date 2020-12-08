@@ -23,11 +23,11 @@ from crspy.graphical_functions import colourts
 
 
 """
-def theta(a0, a1, a2, ps, N, N0, lw, wsom):
+def theta_calc(a0, a1, a2, bd, N, N0, lw, wsom):
     """
     The standard calculation to give an estimate of soil moisture in g cm^3
     """
-    return (((a0*ps)/((N/N0)-a1))-(a2*ps)-lw-wsom)
+    return (((a0)/((N/N0)-a1))-(a2)-lw-wsom)*bd
 
 def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
     """
@@ -91,15 +91,15 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
     df['MOD_CORR_MINUS'] = df['MOD_CORR'] - df['MOD_ERR']
     
     # Calculate soil moisture - including min and max error 
-    df['SM'] = df.apply(lambda row: theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR'], N0, lw,
+    df['SM'] = df.apply(lambda row: theta_calc(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR'], N0, lw,
       soc), axis=1)
     df['SM'] = df['SM']
     
-    df['SM_PLUS_ERR'] = df.apply(lambda row: theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR_MINUS'], N0, lw,
+    df['SM_PLUS_ERR'] = df.apply(lambda row: theta_calc(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR_MINUS'], N0, lw,
       soc), axis=1) # Find error (inverse relationship so use MOD minus for soil moisture positive Error)
     df['SM_PLUS_ERR'] = df['SM_PLUS_ERR']  
     
-    df['SM_MINUS_ERR'] = df.apply(lambda row: theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR_PLUS'], N0, lw,
+    df['SM_MINUS_ERR'] = df.apply(lambda row: theta_calc(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR_PLUS'], N0, lw,
       soc), axis=1)
     df['SM_MINUS_ERR'] = df['SM_MINUS_ERR']   
     
@@ -130,7 +130,7 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
         this needs to be corrected for as crspy does not scale to any sensors
     """
     if N0_2 != None:
-        df['SM_ogN0'] = df.apply(lambda row: theta(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR'], N0_2, lw,
+        df['SM_ogN0'] = df.apply(lambda row: theta_calc(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR'], N0_2, lw,
           soc), axis=1)
         df['SM_ogN0'] = df['SM_ogN0']        
         
@@ -170,7 +170,6 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
     
     # Add the graphical function to output timeseries 
     colourts(country, sitenum, yearlysmfig)
-    
     
     print("Done")
     return df

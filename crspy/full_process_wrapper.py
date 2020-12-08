@@ -17,14 +17,30 @@ from crspy.qa import QA_plotting
 from crspy.theta import thetaprocess
 
 
-def process_raw_data(filepath, calibrate=True, N0_2 = None):
+def process_raw_data(filepath, calibrate=True, N0_2 = None, intentype = None):
     """
     A function that wraps all the necessary functions to process data. Can select
     whether to do n0 calibration (e.g. may not be required if previously done).
+    
+    Parameters:
+        filepath = string - location of the file to process
+            e.g. nld['defaultdir']+"/data/raw/SITE_101"
+            
+        calibrate = boolean - whether to do the calibration portion
+            e.g. True or False
+            
+        N0_2 = int - default is None, if included then the int is the second N0
+                number to process 
     """
-    df, country, sitenum, meta = prepare_data(filepath)
+    if intentype == "nearestGV":
+        df,country,sitenum,meta,nmdbstation = prepare_data(filepath, intentype="nearestGV")
+    else:   
+        df, country, sitenum, meta = prepare_data(filepath)
     print("Processing " + str(country)+"_SITE_"+str(sitenum))
-    df, meta = neutcoeffs(df, country, sitenum)
+    if intentype == "nearestGV":
+        df, meta = neutcoeffs(df, country, sitenum, nmdbstation=nmdbstation)
+    else:
+        df, meta = neutcoeffs(df, country, sitenum)
     if calibrate is True:
         meta, N0 = n0_calib(meta, country, sitenum, nld['accuracy'])
     else:

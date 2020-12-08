@@ -208,11 +208,16 @@ def QA_plotting(df, country, sitenum, defaultdir):
     tseriesplots("VP", df, defaultdir, country, sitenum)
     # Plot BATT
     tseriesplots("BATT",df, defaultdir, country, sitenum)
-    # Plot I_TEMP
-    tseriesplots("I_TEM", df, defaultdir, country, sitenum)
+    # Plot I_TEMP - add try catch as MAY not have this data (above data needs to be available)
+    try:
+        tseriesplots("I_TEM", df, defaultdir, country, sitenum)
+    except:
+        print("No I_TEM data")
     # Plot I_RH
-    tseriesplots("I_RH", df, defaultdir, country, sitenum)
-    
+    try:
+        tseriesplots("I_RH", df, defaultdir, country, sitenum)
+    except:
+        print("No I_RH data")
     df = df.drop(['YEAR', 'MONTH', 'DAY'], axis=1)
     df = df.replace(np.nan, nld['noval'])
     print("Done")

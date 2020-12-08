@@ -80,7 +80,7 @@ def shiftandget(era5time, netcdfval, tz):
     return tmpdict
 """
 
-def prepare_data(fileloc):
+def prepare_data(fileloc, intentype=None):
     """
     Provide it with the location of the raw data. If the prelimnary steps have been
     done correctly it will prepare the data.
@@ -96,6 +96,10 @@ def prepare_data(fileloc):
     Parameters:
         fileloc = string - location of the raw timeseries file
             e.g. "~/crspy_Analysis/data/crns_data/raw/USA_SITE_105.txt"
+        intentype = string - default is None but can be set to "nearestGV". This
+                    then follows the method outlined in Hawdon et al., 2014 by finding the
+                    neutron monitor with the nearest GV.
+            e.g. intentype="nearestGV" 
     """
     print("~~~~~~~~~~~~~ Start TidyUp ~~~~~~~~~~~~~")
     ###############################################################################
@@ -286,14 +290,31 @@ def prepare_data(fileloc):
     ###############################################################################
     #                         Jungfraujoch data                                   #
     ###############################################################################
-    print("Getting Jungfraujoch counts...")
-   
-    
-    nmdbdict = nmdb_get(startdate, enddate)
-    df['JUNG_COUNT'] = df['DT'].map(nmdbdict)
-    df['JUNG_COUNT'] = df['JUNG_COUNT'].astype(float)
-    print("Done")
-    ###############################################################################
+    if intentype == "nearestGV":
+        
+        
+        nmdblist = pd.read_csv(nld['defaultdir']+"/data/nmdb_stations.csv")
+        nmdblist = dict(zip(nmdblist['Station_Code'], nmdblist['GV']))
+        sitegv = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "GV"].item()
+        key, value = min(nmdblist.items(), key=lambda x: abs(sitegv - x[1]))
+        print("Getting NMDB data from "+str(key))
+        nmdbdict = nmdb_get(startdate, enddate, station=str(key))
+        df['NMDB_COUNT'] = nld['noval'] # make sure its empty
+        df['NMDB_COUNT'] = df['DT'].map(nmdbdict)
+        df['NMDB_COUNT'] = df['NMDB_COUNT'].astype(float) # Keep as Jung Count to save changing scripts
+        nmdbstation = str(key)
+    else:
+        print("Getting Jungfraujoch counts...")
+       
+        try:
+            nmdbdict = nmdb_get(startdate, enddate)
+            df['NMDB_COUNT'] = nld['noval'] # make sure its empty
+            df['NMDB_COUNT'] = df['DT'].map(nmdbdict)
+            df['NMDB_COUNT'] = df['NMDB_COUNT'].astype(float)
+            print("Done")
+        except:
+            print("NMDB down")
+        ###############################################################################
     #                            The Final Table                                  #
     #                                                                             #
     # Add function that checks to see if column is all -999 - if so drop column   #
@@ -319,7 +340,10 @@ def prepare_data(fileloc):
     movecol("TEMP",4)
     
     df.drop(labels=['TIME','PRESS1','PRESS2','DATE', 'dupes'], axis=1,inplace = True) # not required after here
-    
+    try:
+        df.drop(labels=['fsol'], axis=1, inplace=True)
+    except:
+        pass
     # Add list of columns that some sites wont have data on - removes them if empty
     df = dropemptycols(df.columns.tolist(), df)
     df = df.round(3)
@@ -332,4 +356,7 @@ def prepare_data(fileloc):
     df.to_csv(nld['defaultdir'] + "/data/crns_data/tidy/"+country+"_SITE_" + sitenum+"_TIDY.txt", 
           header=True, index=False, sep="\t",  mode='w')
     print("Done")
-    return df, country, sitenum, meta
+    if intentype != None:
+        return df, country, sitenum, meta, nmdbstation
+    else:
+        return df, country, sitenum, meta

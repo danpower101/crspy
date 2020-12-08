@@ -223,7 +223,7 @@ def get_agb(lat, lon, tol=0.001):
     return agb
 
 ############################## Get Jungfraujoch Data ##########################
-def nmdb_get(startdate, enddate):
+def nmdb_get(startdate, enddate, station="JUNG"):
     """
     Will collect data for Junfraujoch station that is required to calculate fsol.
     Returns a dictionary that can be used to fill in values to the main dataframe
@@ -234,14 +234,16 @@ def nmdb_get(startdate, enddate):
             e.g 2015-10-01
         enddate = date of the format YYYY-mm-dd
             e.g. 2016-10-01
+        station = string - station code from NMDB site
+            e.g. "YKTK", default == "JUNG"
     """
     #split for use in url
     sy,sm,sd = str(startdate).split("-")
     ey,em,ed = str(enddate).split("-")
     
     #Collect html from request and extract table and write to dict
-    url = "http://nest.nmdb.eu/draw_graph.php?formchk=1&stations[]=JUNG&tabchoice=1h&dtype=corr_for_efficiency&tresolution=60&force=1&yunits=0&date_choice=bydate&start_day={sd}&start_month={sm}&start_year={sy}&start_hour=0&start_min=0&end_day={ed}&end_month={em}&end_year={ey}&end_hour=23&end_min=59&output=ascii"
-    url = url.format(sd=sd, sm=sm, sy=sy, ed=ed, em=em, ey=ey)
+    url = "http://nest.nmdb.eu/draw_graph.php?formchk=1&stations[]={station}&tabchoice=1h&dtype=corr_for_efficiency&tresolution=60&force=1&yunits=0&date_choice=bydate&start_day={sd}&start_month={sm}&start_year={sy}&start_hour=0&start_min=0&end_day={ed}&end_month={em}&end_year={ey}&end_hour=23&end_min=59&output=ascii"
+    url = url.format(station=station, sd=sd, sm=sm, sy=sy, ed=ed, em=em, ey=ey)
     response = urllib.request.urlopen(url)
     html = response.read()
     soup = BeautifulSoup(html, features="html.parser")
@@ -261,6 +263,39 @@ def nmdb_get(startdate, enddate):
     cols = ['DATE', 'COUNT']
     dfneut.columns = cols
     dates = pd.to_datetime(dfneut['DATE'])
+    count = dfneut['COUNT']
+    
+    dfdict = dict(zip(dates, count))
+    
+    return dfdict
+
+
+def nmdb_get_alt(startdate, enddate):
+    """
+    Alternative to the above nmdb_get which will use a recorded file saved in the folder
+    This is brought in to deal with when nmdb may be down
+    
+    Parameters:
+        startdate = date of the format YYYY-mm-dd
+            e.g 2015-10-01
+        enddate = date of the format YYYY-mm-dd
+            e.g. 2016-10-01
+        station = string - station code from NMDB site
+            e.g. "YKTK", default == "JUNG"
+    """
+    df = open(nld['defaultdir']+"data/nmdb/tmp.txt", "r")
+    lines = df.readlines()
+    df.close()
+    lines = lines[1:]
+    dfneut = pd.DataFrame(lines)
+    dfneut = dfneut[0].str.split(";", n = 2, expand = True) 
+    cols = ['DATE', 'COUNT']
+    dfneut.columns = cols
+    
+    dfneut['DATE'] = pd.to_datetime(dfneut['DATE'])
+    
+    
+    dates = dfneut['DATE']
     count = dfneut['COUNT']
     
     dfdict = dict(zip(dates, count))

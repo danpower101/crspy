@@ -41,10 +41,11 @@ from crspy.neutron_correction_funcs import (
         RcCorr,
         agb,              
         )
+from crspy.additional_metadata import nmdb_get
 
 os.chdir(nld['defaultdir']) #set wd
 
-def neutcoeffs(df, country, sitenum):
+def neutcoeffs(df, country, sitenum, nmdbstation=None):
     """
     Provides the correction factors for the time series data. 
     
@@ -102,11 +103,21 @@ def neutcoeffs(df, country, sitenum):
     
     See Hawdon et al (2014) for full explanation - equation taken from that paper.
     """
-    Rc = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "GV"].item()
-    RcCorrval = RcCorr(Rc)
-    df['finten_noGV'] = df.apply(lambda row: finten(nld['jung_ref'], row['JUNG_COUNT']), axis=1)
-    
-    df['finten'] = (df['finten_noGV'] - 1) * RcCorrval + 1
+    if nmdbstation != None:
+        tmp = nmdb_get("2011-05-01", "2011-05-01", str(nmdbstation))
+        dt = next(iter(tmp))      
+        x = tmp[dt]
+        x = float(x) # get value
+        df['finten'] = df.apply(lambda row: finten(x, row['NMDB_COUNT']), axis=1)
+        
+        
+        
+    else:
+        Rc = meta.loc[(meta.SITENUM == sitenum) & (meta.COUNTRY == country), "GV"].item()
+        RcCorrval = RcCorr(Rc)
+        df['finten_noGV'] = df.apply(lambda row: finten(nld['jung_ref'], row['NMDB_COUNT']), axis=1)
+        
+        df['finten'] = (df['finten_noGV'] - 1) * RcCorrval + 1
     
     ###############################################################################
     #                       Above Ground Biomass                                  #
