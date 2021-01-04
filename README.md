@@ -70,8 +70,8 @@ When setting up your working directory the folder structure is written out for y
 [**References**](https://github.com/danpower101/crspy/wiki/References)
 
 ## License
-MIT License
-MIT © [D. Power](2020)
+GNU GPLv3
+GNU GPLv3 © [D. Power, R Rosolem, M Rico-Ramirez](2020-2021)
 
 
 <p align="center"> <img width=20% src="https://github.com/danpower101/The_CRNS_Process/blob/master/Images/University_of_Bristol_logo.png">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img width=20% src="https://github.com/danpower101/The_CRNS_Process/blob/master/Images/WISECDTlogo.png">
