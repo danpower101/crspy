@@ -18,45 +18,55 @@ import os
 def flag_and_remove(df, N0, country, sitenum):
     """
     Quality control to remove values that are in error. 
-    
+
     Flags:
         1 = fast neutron counts more than 20% difference to previous count
         2 = fast neutron counts less than the minimum count rate (default == 30%, can be set in namelist)
         3 = fast neutron counts more than n0
         4 = battery below 10v
-        
+
+    Parameters:
+        df = dataFrame of processed CRNS data to be flagged (should be the output after calibration/neut coeff creation)
+        N0 = the N0 number identified for the site through calibration
+        country = string of country e.g. "USA"
+        sitenum = string of sitenum e.g. "011"
+
     """
     print("~~~~~~~~~~~~~ Flagging and Removing ~~~~~~~~~~~~~")
     print("Identifying erroneous data...")
     idx = df['DT']
     idx = pd.to_datetime(idx)
-    
+
     # Need to save external variables as when deleting and reindexing they are lost
-    
+
     tmptemp = df['TEMP']
     tmprain = df['RAIN']
     tmpvp = df['VP']
     tmpdp = df['DEWPOINT_TEMP']
     tmpswe = df['SWE']
-    
-    df = df.reset_index(drop=True) # Reset index incase df is from another process and is DT
+
+    # Reset index incase df is from another process and is DT
+    df = df.reset_index(drop=True)
     df2 = df.copy()
-    df2['FLAG'] = 0 # initialise FLAG to 0
-    
-    df2.loc[df2.MOD_CORR > N0, "FLAG"] = 3 # Flag consistent with COSMOS-USA system
+    df2['FLAG'] = 0  # initialise FLAG to 0
+
+    # Flag consistent with COSMOS-USA system
+    df2.loc[df2.MOD_CORR > N0, "FLAG"] = 3
     df = df.drop(df[df.MOD_CORR > N0].index)   # drop above N0
-    
-    df2.loc[(df2.MOD_CORR < (N0*(nld['belowN0']/100))) & (df2.MOD_CORR != nld['noval']), "FLAG"] = 2
-    df = df.drop(df[df.MOD_CORR < (N0*(nld['belowN0']/100))].index) # drop below 0.3 N0
+
+    df2.loc[(df2.MOD_CORR < (N0*(nld['belowN0']/100))) &
+            (df2.MOD_CORR != nld['noval']), "FLAG"] = 2
+    # drop below 0.3 N0
+    df = df.drop(df[df.MOD_CORR < (N0*(nld['belowN0']/100))].index)
    # df = df.reset_index(drop=True)
-    
+
     df2.loc[(df2.BATT < 10) & (df2.BATT != nld['noval']), "FLAG"] = 4
     df = df.drop(df[df.BATT < 10].index)
-    
+
    # df = df.reset_index(drop=True)
     # Drop >20% diff in timestep
-    
-    moddiff=[0]
+
+    moddiff = [0]
     tmpindex = list(df.index)
     for i in range(len(tmpindex)-1):
         lateridx = tmpindex[i+1]
@@ -66,7 +76,7 @@ def flag_and_remove(df, N0, country, sitenum):
         currentdiff = (later - earlier)
         moddiff.append(currentdiff)
     df['DIFF'] = moddiff
-    
+
     prcntdiff = [0]
     for i in range(len(tmpindex)-1):
         lateridx = tmpindex[i+1]
@@ -76,53 +86,53 @@ def flag_and_remove(df, N0, country, sitenum):
         indvdiff = (later / earlier)*100
         prcntdiff.append(indvdiff)
     df['PRCNTDIFF'] = prcntdiff
-    
+
     df['INDEX_TMP'] = df.index
 
     diff1 = df.loc[(df['PRCNTDIFF'] > nld['timestepdiff']), "INDEX_TMP"]
     #diff1 = diff1[0]
     diff2 = df.loc[(df['PRCNTDIFF'] < (-nld['timestepdiff'])), "INDEX_TMP"]
     #diff2 = diff2[0]
-    
+
     df2 = df2.reset_index(drop=True)
     df2.loc[diff1, "FLAG"] = 1
-    df2.loc[diff2, "FLAG"] = 1    
+    df2.loc[diff2, "FLAG"] = 1
 
-    
     df = df.drop(df[df.PRCNTDIFF > nld['timestepdiff']].index)
     df = df.drop(df[df.PRCNTDIFF < (-nld['timestepdiff'])].index)
     #df = df.reset_index(drop=True)
-    
+
     # Fill in master time again after removing
-    df.replace(nld['noval'], np.nan, inplace=True) # Need this to handle below code
+    # Need this to handle below code
+    df.replace(nld['noval'], np.nan, inplace=True)
     df['DT'] = pd.to_datetime(df['DT'], format="%Y-%m-%d %H:%M:%S")
     df = df.set_index(df.DT)
     df = df.reindex(idx, fill_value=nld['noval'])
     df['DT'] = pd.to_datetime(df['DT'])
-        
+
     flagseries = df2['FLAG']
-    df['FLAG'] = flagseries.values # Place flag vals back into df
+    df['FLAG'] = flagseries.values  # Place flag vals back into df
     df['DT'] = df.index
-    
-    df=df.drop(["DIFF","PRCNTDIFF","INDEX_TMP"], axis =1)
-    
+
+    df = df.drop(["DIFF", "PRCNTDIFF", "INDEX_TMP"], axis=1)
+
     insertat = len(df.columns)-3
     dtcol = df['FLAG']
-    df.drop(labels=['FLAG'], axis=1,inplace = True) # Move FLAG to first col
+    df.drop(labels=['FLAG'], axis=1, inplace=True)  # Move FLAG to first col
     df.insert(insertat, 'FLAG', dtcol)
-    
+
     # Add the external variables back in
-    
+
     df['TEMP'] = tmptemp
     df['RAIN'] = tmprain
     df['VP'] = tmpvp
     df['DEWPOINT_TEMP'] = tmpdp
     df['SWE'] = tmpswe
-    
-    df = df.replace(np.nan, nld['noval'])    
-    
+
+    df = df.replace(np.nan, nld['noval'])
+
     df.to_csv(nld['defaultdir'] + "/data/crns_data/FINAL/"+country+"_SITE_" + sitenum+"_final.txt",
-          header=True, index=False, sep="\t", mode='w')
+              header=True, index=False, sep="\t", mode='w')
     print("Done")
     return df
 
@@ -130,72 +140,95 @@ def flag_and_remove(df, N0, country, sitenum):
 #                          The plotting                                       #
 ###############################################################################
 
+
 def tseriesplots(var, df, defaultdir, country, sitenum):
     """
     Usually the defaultdir/country/sitenum will be assigned in master script.
-    
+
+        Parameters:
+        var = the variable to plot
+        df = dataFrame of processed CRNS data
+        defaultdir = default directory (usually assigned in nld['defaultdir'])
+        country = string of country e.g. "USA"
+        sitenum = string of sitenum e.g. "011
     """
     x = df['DT']
     y = df[var]
-    plt.figure(var, figsize =(10,5))
-    plt.title(var, fontsize = 16)
-    plt.plot(x, y, marker='o', markersize = 0.3,  color='r', linewidth = 0.3)
-    plt.savefig(defaultdir+"data/qa/"+country+"_Site_"+sitenum+"/"+var+".png", dpi=250)
+    plt.figure(var, figsize=(10, 5))
+    plt.title(var, fontsize=16)
+    plt.plot(x, y, marker='o', markersize=0.3,  color='r', linewidth=0.3)
+    plt.savefig(defaultdir+"data/qa/"+country +
+                "_Site_"+sitenum+"/"+var+".png", dpi=250)
     plt.close()
 
 
 def QA_plotting(df, country, sitenum, defaultdir):
-    
+    """ 
+    Function to output the QA plots.
+
+    Parameters:
+        df = dataframe of the CRNS data
+        country = string of country code e.g. "USA"
+        sitenum = string of sitenum code e.g. "011"
+        defaultdir = default directory (usually assigned in nld['defaultdir'])
+
+    """
+
     print("~~~~~~~~~~~~~ Plotting QA Graphs ~~~~~~~~~~~~~")
     print("Saving plots...")
-    df = df.replace(nld['noval'],np.nan) # set error to nan values for plotting
+    # set error to nan values for plotting
+    df = df.replace(nld['noval'], np.nan)
     df['YEAR'] = df['DT'].dt.year
     df['MONTH'] = df['DT'].dt.month
     df['DAY'] = df['DT'].dt.day
     # Reduce the size to include the variables to be compared - otherwise it's far too big
-    dfcomp = pd.DataFrame(df, columns = [ "MOD", "UNMOD", "YEAR", "MONTH", "DAY", "PRESS", "finten", "fbar", "fawv", "TEMP", #!!!
-                                         "BATT", "I_TEMP", "I_RH"])
-    
+    dfcomp = pd.DataFrame(df, columns=["MOD", "UNMOD", "YEAR", "MONTH", "DAY", "PRESS", "finten", "fbar", "fawv", "TEMP",  # !!!
+                                       "BATT", "I_TEMP", "I_RH"])
+
     # Folder Housekeeping - create if not already there
-    uniquefolder = country + "_SITE_" + str(sitenum) # Create a folder name for output
-    os.chdir(defaultdir + "/data/qa/") # Change wd to folder
-    alreadyexist = os.path.exists(uniquefolder) # Checks if the folder exists
+    # Create a folder name for output
+    uniquefolder = country + "_SITE_" + str(sitenum)
+    os.chdir(defaultdir + "/data/qa/")  # Change wd to folder
+    alreadyexist = os.path.exists(uniquefolder)  # Checks if the folder exists
     if alreadyexist == False:
-        os.mkdir(uniquefolder) # Statement to manage writing a new folder or not depending on existance
+        # Statement to manage writing a new folder or not depending on existance
+        os.mkdir(uniquefolder)
     else:
         pass
-    os.chdir(defaultdir) # change back
-    
-    
-    # First - correlation heat map    
+    os.chdir(defaultdir)  # change back
+
+    # First - correlation heat map
     plt.figure(101)
     plt.title("Correlation")
-    sns.heatmap(dfcomp.corr(), cmap="BuPu") # Heat Map to check for correlations
-    plt.savefig(defaultdir+"/data/qa/"+country+"_Site_"+sitenum+"/correlation_heat_map.png")
+    # Heat Map to check for correlations
+    sns.heatmap(dfcomp.corr(), cmap="BuPu")
+    plt.savefig(defaultdir+"/data/qa/"+country+"_Site_" +
+                sitenum+"/correlation_heat_map.png")
     plt.close()
-    
-    #Plot the day/year/month - check for down time
+
+    # Plot the day/year/month - check for down time
     tseriesplots("YEAR", df, defaultdir, country, sitenum)
     tseriesplots("MONTH", df, defaultdir, country, sitenum)
     tseriesplots("DAY", df, defaultdir, country, sitenum)
-    
-    #Plot MOD
+
+    # Plot MOD
     tseriesplots("MOD", df, defaultdir, country, sitenum)
-    
+
     # Also add descriptive stats of MOD in a bar chart format below
     desc = df['MOD'].describe()
-    desc = desc.drop(desc.index[0]) # Drop Count as its messes with axis
+    desc = desc.drop(desc.index[0])  # Drop Count as its messes with axis
     desc = desc.reset_index()
-    plt.figure("DESC", figsize = (10,5))
+    plt.figure("DESC", figsize=(10, 5))
     plt.title("MOD Descriptive Statistics")
-    plt.bar(desc['index'], desc['MOD'], color = "Green")
-    plt.savefig(defaultdir+"/data/qa/"+country+"_Site_"+sitenum+"/MOD_descriptive.png", dpi=200)
+    plt.bar(desc['index'], desc['MOD'], color="Green")
+    plt.savefig(defaultdir+"/data/qa/"+country+"_Site_" +
+                sitenum+"/MOD_descriptive.png", dpi=200)
     plt.close()
-    
+
     # Plot fsol
     tseriesplots("finten", df,  defaultdir, country, sitenum)
     # Plot fbar
-    tseriesplots ("fbar", df, defaultdir, country, sitenum)
+    tseriesplots("fbar", df, defaultdir, country, sitenum)
     # Plot fawv
     tseriesplots("fawv", df, defaultdir, country, sitenum)
     # Plot PRESS
@@ -207,7 +240,7 @@ def QA_plotting(df, country, sitenum, defaultdir):
     # Plot VP
     tseriesplots("VP", df, defaultdir, country, sitenum)
     # Plot BATT
-    tseriesplots("BATT",df, defaultdir, country, sitenum)
+    tseriesplots("BATT", df, defaultdir, country, sitenum)
     # Plot I_TEMP - add try catch as MAY not have this data (above data needs to be available)
     try:
         tseriesplots("I_TEM", df, defaultdir, country, sitenum)

@@ -2,17 +2,17 @@
 """
 Created on Mon Apr 27 10:22:50 2020
 
-@author: vq18508
+@author: D. Power
 """
 
 __version__ = "1.0.0"
-#from .agb_extraction import *  -removed due to error, either fixed in future update or call using smoon.agb_extraction....
+# from .agb_extraction import *  -removed due to error, either fixed in future update or call using smoon.agb_extraction....
 from .era5_land import *
 from .gen_funcs import *
 from .initial_setup import *
 from .mass_atten import *
 from .n0_calibration import *
-#from .netcdf_timeseries import *   -removed due to error with rasterio, either fixed in future update or call using smoon.netcdf_timeseries....
+# from .netcdf_timeseries import *   -removed due to error with rasterio, either fixed in future update or call using smoon.netcdf_timeseries....
 from .neutron_coeff_creation import *
 from .neutron_correction_funcs import *
 from .qa import *
