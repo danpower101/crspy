@@ -6,7 +6,7 @@ Please note: this is a work in progress that is being updated regularly, so bugs
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 ![Python](https://img.shields.io/badge/python-v3.7+-blue.svg)
 ![Contributions welcome](https://img.shields.io/badge/contributions-welcome-orange.svg)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/license-LGPL--3.0-green)](https://github.com/danpower101/crspy/blob/master/LICENSE)
 
 ## Motivation
 Cosmic-Ray Neutron Sensors measure fast neutrons, which after corrections and calibration, can be used to estimate field scale soil moisture. Sensors are located around the world and have been used for upwards of ten years giving a valuable source of information for hydrologists and beyond. Important improvements have been discovered in that time but may not have been implemented on historical data. This tool is designed to allow changes in processing and calibration to be easily implemented on data from around the globe, giving a uniform method in processing soil moisture estimates. This will allow effective analysis for Hydrological applications. 
