@@ -17,20 +17,27 @@ import urllib
 from bs4 import BeautifulSoup
 import numpy as np
 import math
-
 # crspy funcs
 from crspy.gen_funcs import getlistoffiles
 from crspy.mass_atten import betacoeff
 
 
 def isric_variables(lat, lon):
-    """
-    Collects all variables from ISRIC for given lat and lon.
+    """isric_variables collects all variables from ISRIC database for given latitude and longitude.
 
-    Parameters:
-        lat = latitude (degrees)
-        lon = longitude (degrees)
+    Parameters
+    ----------
+    lat : float
+        latitude of site in degrees
+    lon : float
+        longitude of site in degrees
+
+    Returns
+    -------
+    dictionary
+        dictionary containing all the relevant soil properties data
     """
+
     rest_url = "https://rest.isric.org"
     prop_query_url = f"{rest_url}/soilgrids/v2.0/properties/query"
     siteloc = {"lat": lat, "lon": lon}
@@ -47,25 +54,31 @@ def isric_variables(lat, lon):
 
 
 def isric_depth_mean(resdict, variable):
+    """isric_depth_mean returns mean values of the collected soil data - equal average
+
+    Parameters
+    ----------
+    resdict : dictionary
+        output from isric_variables function
+    variable : int
+        number corresponding to the variable to average
+            0=bdod
+            1=cec
+            2=cfvo
+            3=clay
+            4=nitrogen
+            5=ocd
+            6=phh20
+            7=sand
+            8=silt
+            9=soc
+
+    Returns
+    -------
+    float   
+        returns the depth averaged value
     """
-    Returns mean values of the collected soil data - equal average
 
-    Parameters:
-        resdict = dictionary output of isric_variables func
-        variable = integer
-
-    0=bdod
-    1=cec
-    2=cfvo
-    3=clay
-    4=nitrogen
-    5=ocd
-    6=phh20
-    7=sand
-    8=silt
-    9=soc
-
-    """
     tmp = 0
     for i in range(len(resdict["properties"]["layers"][variable]["depths"])):
         tmp += resdict["properties"]["layers"][variable]["depths"][i]["values"]["mean"]
@@ -75,23 +88,24 @@ def isric_depth_mean(resdict, variable):
 
 
 def isric_depth_uc(resdict, variable):
-    """
-    Returns mean uncertainty values - equal average.
+    """isric_depth_uc returns mean uncertainty values - equal average.
 
-    Parameters:
-        resdict = dictionary output of isric_variables func
-        variable = integer
-
-    0=bdod
-    1=cec
-    2=cfvo
-    3=clay
-    4=nitrogen
-    5=ocd
-    6=phh20
-    7=sand
-    8=silt
-    9=soc
+    Parameters
+    ----------
+    resdict : dictionary 
+         output of isric_variables func
+    variable : int
+        number corresponding to the variable to average
+            0=bdod
+            1=cec
+            2=cfvo
+            3=clay
+            4=nitrogen
+            5=ocd
+            6=phh20
+            7=sand
+            8=silt
+            9=soc
 
     """
     tmp = 0
@@ -103,13 +117,21 @@ def isric_depth_uc(resdict, variable):
 
 
 def isric_wrb_class(lat, lon):
-    """
-    Returns most probable wrb soil class from ISRIC soilgrid
+    """isric_wrb_class returns most probable wrb soil class from ISRIC soilgrid
 
-    Parameters:
-        lat = latitude (degrees)
-        lon = longitude (degrees)
+    Parameters
+    ----------
+    lat : float
+        latitude of site (degrees)
+    lon : float
+        longitude of site (degrees)
+
+    Returns
+    -------
+    string
+        the highest probability WRB as defined by the ISRIC soilgridsv2 database
     """
+
     siteloc = {"lat": lat, "lon": lon}
     rest_url = "https://rest.isric.org"
 
@@ -124,15 +146,29 @@ def isric_wrb_class(lat, lon):
 
 
 def soil_texture(sand, silt, clay):
-    """
-    Gives soil texture based on decimal percentage of sand, silt and clay.
+    """soil_texture gives soil texture based on decimal percentage of sand, silt and clay.
     Based on USDA soil textures
 
-    Parameters:
-        sand = percent of sand in soil sample (decimal between 0 and 1)
-        silt = percent of silt in soil sample (decimal between 0 and 1)
-        clay = percent of clay in soil sample (decimal between 0 and 1) 
+    Parameters
+    ----------
+    sand : float
+        percentage of sand given as a decimal between 0 and 1
+    silt : float
+        percentage of silt given as a decimal between 0 and 1
+    clay : float
+        percentage of clay given as a decimal between 0 and 1
+
+    Returns
+    -------
+    string
+        returns the USDA soil type
+
+    Raises
+    ------
+    Exception
+        Check that the units are given as decimal rather than percentage
     """
+
     texture = []
     if (sand > 1) or (silt > 1) or (clay > 1):
         raise Exception("Units should be decimal percent e.g. 80% == 0.8")
@@ -196,14 +232,20 @@ def dl_land_cover():
 
 
 def find_lc(lat, lon):
-    """
-    Uses latitude and longitude to extract land cover data from the ESA_CCI data.
+    """find_lc uses latitude and longitude to extract land cover data from the ESA_CCI data.
 
-        Parameters:
-            lat = latitude (degrees)
-            lon = longitude (degrees)
-    """
+    Parameters
+    ----------
+    lat : float
+        latitude of the site (degrees)
+    lon : float
+        longitude of the site (degrees)
 
+    Returns
+    -------
+    string
+        land cover value from the grid
+    """
     landdat = getlistoffiles(nld['defaultdir'] + "/data/land_cover_data/")
 
     # Open file
@@ -234,13 +276,21 @@ def dl_agb():
 
 
 def get_agb(lat, lon, tol=0.001):
-    """
-    Uses latitude and longitude to extract the above ground biomass data from the ESA_CCI dataset. 
+    """get_agb uses latitude and longitude to extract the above ground biomass data from the ESA_CCI dataset
 
-        Parameters:
-        lat = latitude (degrees)
-        lon = longitude (degrees)
-        tol = tolerance for finding nearest grid for provided latitude and longitude.
+    Parameters
+    ----------
+    lat : float
+        latitude of site (degrees)
+    lon : float
+        longitude of site (degrees)
+    tol : float, optional
+        tolerance for finding nearest grid point, by default 0.001
+
+    Returns
+    -------
+    float
+        above ground biomass value in kg/m2
     """
     ncfile = nld['defaultdir'] + \
         "/data/global_biomass_netcdf/ESACCI-BIOMASS-L4-AGB-MERGED-100m-2017-fv1.0.nc"
@@ -255,18 +305,24 @@ def get_agb(lat, lon, tol=0.001):
 
 
 def nmdb_get(startdate, enddate, station="JUNG"):
-    """
-    Will collect data for Junfraujoch station that is required to calculate fsol.
+    """nmdb_get will collect data for Junfraujoch station that is required to calculate fsol.
     Returns a dictionary that can be used to fill in values to the main dataframe
     of each site.
 
-    Parameters:
-        startdate = date of the format YYYY-mm-dd
+    Parameters
+    ----------
+    startdate : datetime
+        start date of desire data in format YYYY-mm-dd
             e.g 2015-10-01
-        enddate = date of the format YYYY-mm-dd
-            e.g. 2016-10-01
-        station = string - station code from NMDB site
-            e.g. "YKTK", default == "JUNG"
+    enddate : datetime
+        end date of desired data in format YYY-mm-dd
+    station : str, optional
+        if using different station provide the value here (NMDB.eu shows alternatives), by default "JUNG"
+
+    Returns
+    -------
+    dict
+        dictionary of neutron count data from NMDB.eu
     """
     # split for use in url
     sy, sm, sd = str(startdate).split("-")
@@ -302,18 +358,23 @@ def nmdb_get(startdate, enddate, station="JUNG"):
 
 
 def nmdb_get_alt(startdate, enddate):
-    """
-    Alternative to the above nmdb_get which will use a recorded file saved in the folder
+    """nmdb_get_alt alternative to the above nmdb_get which will use a recorded file saved in the folder
     This is brought in to deal with when nmdb may be down
 
-    Parameters:
-        startdate = date of the format YYYY-mm-dd
+    Parameters
+    ----------
+    startdate : datetime
+        start date of desire data in format YYYY-mm-dd
             e.g 2015-10-01
-        enddate = date of the format YYYY-mm-dd
-            e.g. 2016-10-01
-        station = string - station code from NMDB site
-            e.g. "YKTK", default == "JUNG"
+    enddate : datetime
+        end date of desired data in format YYY-mm-dd
+
+    Returns
+    -------
+    dict
+        dictionary of neutron count data from NMDB.eu
     """
+
     df = open(nld['defaultdir']+"data/nmdb/tmp.txt", "r")
     lines = df.readlines()
     df.close()
@@ -343,23 +404,21 @@ Uses the ERA5_Land data for each site to give a KG class.
 
 
 def KG_func(meta, country, sitenum):
-    """
-    Takes in the metadata along with a country/sitenum. Will then check to see
-    if local data is available. If it is, it will calculate Koppen-Geigger climate
-    classes using local data as well as Mean Annual Precipitation (MAP) and 
-    Mean Annual Temperature (MAT). 
+    """KG_func - Takes in the metadata along with a country/sitenum. Will then check to see if local data is available. If it is, it will calculate Koppen-Geigger climate classes using local data as well as Mean Annual Precipitation(MAP) and Mean Annual Temperature(MAT).
 
-    If local unavailable it will use ERA5_Land data (which needs to be prepared
-    seperately)
+    Parameters
+    ----------
+    meta : dataframe
+        The dataframe of metadata
+    country : string
+        Country string e.g. "USA"
+    sitenum : string
+        Site Number string e.g. "011"
 
-        Parameters:
-        meta = dataframe of metadata
-            e.g meta
-        country = string of country
-            e.g. "UK
-        sitenum = string of sitenum
-            e.g. "101"
-
+    Returns
+    -------
+    meta : dataframe
+        Returns the metadata dataframe with KG, MAP and MAT values inputted for the site.
     """
 
     sitecode = country+"_SITE_"+sitenum
@@ -407,6 +466,7 @@ def KG_func(meta, country, sitenum):
         except:
             if len(era5.site) > 1:
                 print("No ERA5-Land data available for "+str(sitecode))
+                return
             else:
                 era5site = era5  # If user only has one site it breaks here - this stops that
 
@@ -587,29 +647,25 @@ def KG_func(meta, country, sitenum):
 
 
 def fill_metadata(meta, calc_beta=True, land_cover=True, agb=True):
-    """
-    Reads in meta_data table, uses the latitude and longitude of each site to find
+    """fill_metadata reads in meta_data table, uses the latitude and longitude of each site to find
     metadata from the ISRIC soil database, as well as calculating reference pressure
     and beta coefficient.
 
-    Parameters:
-        meta = csv file containing the metadata for each site (listed below)
-        calc_beta = boolean - whether or not to calculte the beta coefficient
-                    included as this requires GV and perhaps a user wants data
-                    without this
-        land_cover = boolean - option to turn off the land cover addition in meta_data
-        agb = boolean - option to turn off above ground biomass
+    Parameters
+    ----------
+    meta : dataframe
+        metadata dataframe
+    calc_beta : bool, optional
+        whether to calculate the beta coefficient for the sites, by default True
+    land_cover : bool, optional
+        whether to extract the lang cover data for the sites, by default True
+    agb : bool, optional
+        whether to extract the above ground biomass data for the sites, by default True
 
-
-    REQUIRED COLUMNS IN META_DATA:
-        LATITUDE: latitude in degrees
-            e.g. 51
-        LONGITUDE: longitude in degrees
-            e.g. 51.1
-        ELEV: elevation of site in metres
-            e.g. 201(NOT REQUIRED IF CALC_BETA TURNED OFF)
-        GV: cutoff rigidity of site (can be obtained at http://crnslab.org/util/rigidity.php )
-            e.g. 2.2 (NOT REQUIRED IF CALC_BETA TURNED OFF)
+    Returns
+    -------
+    dataframe
+        returns the metadata dataframes with the values added
     """
 
     meta['SITENUM'] = meta.SITENUM.map("{:03}".format)  # Ensure leading zeros
@@ -756,3 +812,5 @@ def fill_metadata(meta, calc_beta=True, land_cover=True, agb=True):
                 header=True, index=False, mode='w')
 
     return meta
+
+# %%

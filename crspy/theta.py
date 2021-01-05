@@ -26,23 +26,34 @@ from crspy.graphical_functions import colourts
 
 
 def theta_calc(a0, a1, a2, bd, N, N0, lw, wsom):
-    """
-    The standard calculation to give an estimate of soil moisture in g cm^3 
+    """theta_calc standard theta calculation
 
-    Parameters:
-    a0,a1,a2 = constants defined in name_list file
-    bd = bulk density e.g. 1.4
-    N =  Neutron count e.g. 2000
-    N0 = Maximum neutron count for site (from calibration) e.g. 3000
-    lw = lattice water - decimal e.g. 0.02
-    wsom = soil organic carbon - decimal e.g. 0.05
+    Parameters
+    ----------
+    a0 : float
+        constant
+    a1 : float
+        constant
+    a2 : float
+        constant
+    bd : float
+        bulk density e.g. 1.4 g/cm3
+    N : int
+        Neutron count (corrected)
+    N0 : int
+        N0 number
+    lw : float
+        lattice water - decimal percent e.g. 0.002
+    wsom : float
+        soil organic carbon - decimal percent e.g, 0.02
+
+
     """
     return (((a0)/((N/N0)-a1))-(a2)-lw-wsom)*bd
 
 
 def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
-    """
-    Takes the dataframe provided by previous steps and uses the theta calculations
+    """thetaprocess takes the dataframe provided by previous steps and uses the theta calculations
     to give an estimate of soil moisture. 
 
     Constants are taken from meta data which is identified using the "country" and "sitenum"
@@ -57,26 +68,22 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
     data a minimum of 6 hours of data per 12 hour window is required, otherwise one
     missing hour could lead to large gaps in 12 hour means. 
 
-    Savitsky-Golay (SG filter) is also provided using a 12 hour window. - REMOVED FOR NOW
-
-    Parameters:
-        df = dataframe - the sites df which is processed prior to this point (found in data/crns_data/final/)
-
-        meta = dataframe - the metadata.csv file
-
-        country = string - country code of the site
-            e.g. "USA"
-
-        sitenum = string - 3 digit sitenumber of the site
-            e.g. "101"
-
-        yearlysmfig = boolean - whether to output yearly figures when creating time series
-                    default is off.
-
-        N0_2 = int - default is None. This has been added to allow comparison of original N0
-                with new N0
-                e.g. None, or 2000
+    Parameters
+    ----------
+    df : dataframe 
+        dataframe of CRNS data
+    meta : dataframe
+        dataframe of metadata
+    country : str
+        country e.g. "USA"
+    sitenum : str  
+        sitenum e.g. "011"
+    yearlysmfig : bool, optional
+        whether to output yearly figures when creating time series, by default True
+    N0_2 : int, optional
+        This has been added to allow comparison of original N0, by default None
     """
+
     print("~~~~~~~~~~~~~ Estimate Soil Moisture ~~~~~~~~~~~~~")
     ###############################################################################
     #                       Constants                                             #

@@ -30,14 +30,15 @@ pylab.show()
 
 
 def dropemptycols(colstocheck, df):
-    """
-    Drop any columns that are empty (i.e. all -999).
+    """dropemptycols drop any columns that are empty (i.e. all -999)
 
-    Parameters:
-        colstocheck = string (series or single) of column title to check
-            e.g. ["VWC1", "VWC2"]
-        df = DataFrame to check
-            e.g. df
+    Parameters
+    ----------
+    colstocheck : str
+        string of column title to check
+    df : dataframe  
+        dataframe to check
+
     """
     for i in range(len(colstocheck)):
         col = colstocheck[i]
@@ -55,9 +56,7 @@ def dropemptycols(colstocheck, df):
 
 
 def prepare_data(fileloc, intentype=None):
-    """
-    Provide it with the location of the raw data. If the prelimnary steps have been
-    done correctly it will prepare the data.
+    """prepare_data provided with the location of the raw data it will prepare the data.
 
     Steps include: 
         - Find the country and sitenum from text file title
@@ -66,15 +65,15 @@ def prepare_data(fileloc, intentype=None):
         - Collect Jungfraujoch neutron monitor data from NMDB.eu for the timescale here
         - Final tidy of columns
 
+    Parameters
+    ----------
+    fileloc : str   
+        string of the location of the file on the users computer
+    intentype : str, optional
+        can be set to nearestGV if using the alternative method, by default None
 
-    Parameters:
-        fileloc = string - location of the raw timeseries file
-            e.g. "~/crspy_Analysis/data/crns_data/raw/USA_SITE_105.txt"
-        intentype = string - default is None but can be set to "nearestGV". This
-                    then follows the method outlined in Hawdon et al., 2014 by finding the
-                    neutron monitor with the nearest GV.
-            e.g. intentype="nearestGV" 
     """
+
     print("~~~~~~~~~~~~~ Start TidyUp ~~~~~~~~~~~~~")
     ###############################################################################
     #                        Import Data and                                      #
@@ -91,9 +90,15 @@ def prepare_data(fileloc, intentype=None):
     m = re.search('/crns_data/raw/(.+?)_', tmp)
     if m:
         country = m.group(1)
+    else:
+        print("Could not find country from file name...")
+        return
     m2 = re.search('SITE_(.+?).txt', tmp)
     if m2:
         sitenum = m2.group(1)
+    else:
+        print("Could not find country from file name...")
+        return
 
     sitecode = country+"_SITE_"+sitenum  # create full title for use on ERA5Land data
 

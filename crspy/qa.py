@@ -16,22 +16,26 @@ import os
 #                          The flagging                                       #
 ###############################################################################
 def flag_and_remove(df, N0, country, sitenum):
-    """
-    Quality control to remove values that are in error. 
-
+    """flag_and_remove identifies data that should be flagged based on the following criteria and removes it:
     Flags:
         1 = fast neutron counts more than 20% difference to previous count
         2 = fast neutron counts less than the minimum count rate (default == 30%, can be set in namelist)
         3 = fast neutron counts more than n0
         4 = battery below 10v
 
-    Parameters:
-        df = dataFrame of processed CRNS data to be flagged (should be the output after calibration/neut coeff creation)
-        N0 = the N0 number identified for the site through calibration
-        country = string of country e.g. "USA"
-        sitenum = string of sitenum e.g. "011"
 
+    Parameters
+    ----------
+    df : dataframe
+        dataframe of the CRNS data
+    N0 : int
+        N0 number
+    country : str
+        string of country e.g. "USA"
+    sitenum : str
+        string o sitenum e.g. "011"
     """
+
     print("~~~~~~~~~~~~~ Flagging and Removing ~~~~~~~~~~~~~")
     print("Identifying erroneous data...")
     idx = df['DT']
@@ -142,15 +146,20 @@ def flag_and_remove(df, N0, country, sitenum):
 
 
 def tseriesplots(var, df, defaultdir, country, sitenum):
-    """
-    Usually the defaultdir/country/sitenum will be assigned in master script.
+    """tseriesplots creates time series plots of variables in df for visual checks
 
-        Parameters:
-        var = the variable to plot
-        df = dataFrame of processed CRNS data
-        defaultdir = default directory (usually assigned in nld['defaultdir'])
-        country = string of country e.g. "USA"
-        sitenum = string of sitenum e.g. "011
+    Parameters
+    ----------
+    var : str
+        variable to plot
+    df : dataframe
+        dataframe of the CRNS site
+    defaultdir : str
+        working directory
+    country : str
+        country e.g. "USA"
+    sitenum : str
+        sitenum e.g. "011"
     """
     x = df['DT']
     y = df[var]
@@ -163,17 +172,20 @@ def tseriesplots(var, df, defaultdir, country, sitenum):
 
 
 def QA_plotting(df, country, sitenum, defaultdir):
-    """ 
-    Function to output the QA plots.
+    """QA_plotting function to output QA plots
 
-    Parameters:
-        df = dataframe of the CRNS data
-        country = string of country code e.g. "USA"
-        sitenum = string of sitenum code e.g. "011"
-        defaultdir = default directory (usually assigned in nld['defaultdir'])
+    Parameters
+    ----------
+    df : dataframe
+        CRNS site dataframe
+    country : str
+        country e.g. "USA"
+    sitenum : str
+        sitenum e.g. "011"
+    defaultdir : str
+        working directory
 
     """
-
     print("~~~~~~~~~~~~~ Plotting QA Graphs ~~~~~~~~~~~~~")
     print("Saving plots...")
     # set error to nan values for plotting
