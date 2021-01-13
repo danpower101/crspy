@@ -238,7 +238,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
         metadata dataframe
     country : str
         country of the site e.g. "USA"`
-    sitenum : string
+    sitenum : str
         sitenum of the site "e.g.
     defineaccuracy : float
         accuracy that is desired usually 0.01
@@ -284,6 +284,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
 
     os.chdir(nld['defaultdir'])  # Change back to main wd
     print("Done")
+
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~ CALIBRATION DATA READ AND TIDY ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -474,6 +475,11 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
         print("Calibrating to day "+str(i+1)+"...")
         # Assign first calib day df to df1
         df1 = pd.DataFrame.from_dict(dfCalib[i])
+        if df1['SWV'].mean() > 1:
+            print("crspy has detected that your volumetric soil water units (in the calibration data) are not in decimal format and so has divided them by 100. If this is incorrect please adjust the units and reprocess your data")
+            # added to convert - handled with message plus calc
+            df1['SWV'] = df1['SWV']/100
+
         CalibTheta = df1['SWV'].mean()           # Unweighted mean of SWV
         # Assign accuracy as 1 to be compared to in while loop below
         Accuracy = 1
@@ -653,7 +659,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
             # Create a series of N0's to test from 0 to 10000
             N0 = pd.Series(range(0, 10000))
             # Avg theta divided by 100 to be given as decimal
-            vwc = AvgTheta[i] / 100
+            vwc = AvgTheta[i]
             Nave = avgN[i]  # Taken as average for calibration period
             sm = pd.DataFrame(columns=['sm'])
             reler = pd.DataFrame(columns=['RelErr'])

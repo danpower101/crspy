@@ -165,18 +165,18 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
 
     # Depth calcs - use new Schron style. Depth is given considering radius and bd
     df['rs10m'] = df.apply(lambda row: rscaled(
-        10, row['PRESS'], hveg, (row['SM']/100)), axis=1)
+        10, row['PRESS'], hveg, (row['SM'])), axis=1)
     df['rs75m'] = df.apply(lambda row: rscaled(
-        75, row['PRESS'], hveg, (row['SM']/100)), axis=1)
+        75, row['PRESS'], hveg, (row['SM'])), axis=1)
     df['rs150m'] = df.apply(lambda row: rscaled(
-        150, row['PRESS'], hveg, (row['SM']/100)), axis=1)
+        150, row['PRESS'], hveg, (row['SM'])), axis=1)
 
     df['D86_10m'] = df.apply(lambda row: D86(
-        row['rs10m'], bd, (row['SM']/100)), axis=1)
+        row['rs10m'], bd, (row['SM'])), axis=1)
     df['D86_75m'] = df.apply(lambda row: D86(
-        row['rs75m'], bd, (row['SM']/100)), axis=1)
+        row['rs75m'], bd, (row['SM'])), axis=1)
     df['D86_150m'] = df.apply(lambda row: D86(
-        row['rs150m'], bd, (row['SM']/100)), axis=1)
+        row['rs150m'], bd, (row['SM'])), axis=1)
     df['D86avg'] = (df['D86_10m'] + df['D86_75m'] + df['D86_150m']) / 3
     df['D86avg_12h'] = df['D86avg'].rolling(window=nld['smwindow']).mean()
 
