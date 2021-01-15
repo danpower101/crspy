@@ -130,7 +130,7 @@ def pv(ea, temp):
     Returns
     -------
     float
-        absolute humidity
+        absolute humidity (ouput as kg/m^3)
     """
     return ea/(461.5*(temp+273.15))
 

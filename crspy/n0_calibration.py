@@ -719,7 +719,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     meta.to_csv(nld['defaultdir'] + "/data/metadata.csv",
                 header=True, index=False, mode='w')
 
-    plt.plot(totalerror['RelErr'], label=str(unidate[i]))
+    plt.plot(totalerror['RelErr'])
     plt.yscale('log')
     plt.xlabel('N0')
     plt.ylabel('Sum Relative Error (log scale)')

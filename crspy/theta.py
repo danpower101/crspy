@@ -97,6 +97,8 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
         meta.SITENUM == sitenum), 'BD'].item()
     N0 = meta.loc[(meta.COUNTRY == country) & (
         meta.SITENUM == sitenum), 'N0'].item()
+    # convert SOC to water equivelant (see Hawdon et al., 2014)
+    soc = soc * 0.556
     hveg = 0  # Set to 0 to remove as data avilability low and impact low
     sm_min = 0  # Cannot have less than zero
     sm_max = (1-(bd/(nld['density'])))  # Create a max realistic vol sm.
@@ -192,8 +194,9 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
     # Replace nans with -999
     df.fillna(nld['noval'], inplace=True)
     df = df.round(3)
-    df = df.drop(['rs10m', 'rs75m', 'rs150m', 'D86_10m', 'D86_75m', 'D86_150m',
-                  'MOD_CORR_PLUS', 'MOD_CORR_MINUS', 'SM_PLUS_ERR', 'SM_MINUS_ERR'], axis=1)
+    df = df.drop(['rs10m', 'rs75m', 'rs150m', 'D86_10m',
+                  'D86_75m', 'D86_150m'], axis=1)  # ,
+    #     'MOD_CORR_PLUS', 'MOD_CORR_MINUS', 'SM_PLUS_ERR', 'SM_MINUS_ERR'], axis=1)
 
     df.to_csv(nld['defaultdir'] + "/data/crns_data/FINAL/"+country+"_SITE_"+sitenum+"_final.txt",
               header=True, index=False, sep="\t", mode="w")
