@@ -17,7 +17,7 @@ from crspy.qa import QA_plotting
 from crspy.theta import thetaprocess
 
 
-def process_raw_data(filepath, calibrate=True, N0_2=None, intentype=None):
+def process_raw_data(filepath, calibrate=True, intentype=None):
     """process_raw_data is a function that wraps all the necessary functions to process data. The user can select
     whether to complete n0 calibration (i.e. this may not be required if already done previously). It also gives the option to decide which
     intensity correction method to apply as there are two currently used. If a standard is agreed upon this will adjusted here.
@@ -57,8 +57,5 @@ def process_raw_data(filepath, calibrate=True, N0_2=None, intentype=None):
             meta.SITENUM == sitenum), 'N0'].item()
     df = flag_and_remove(df, N0, country, sitenum)
     df = QA_plotting(df, country, sitenum, nld['defaultdir'])
-    if N0_2 != None:
-        df = thetaprocess(df, meta, country, sitenum, N0_2=N0_2)
-    else:
-        df = thetaprocess(df, meta, country, sitenum)
+    df = thetaprocess(df, meta, country, sitenum)
     return df, meta

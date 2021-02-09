@@ -792,6 +792,17 @@ def fill_metadata(meta, calc_beta=True, land_cover=True, agb=True):
             else:
                 pass
 
+            if meta['BD'][i] != None:
+                try:
+                    bd = meta.at[i, 'BD']
+                    meta.at[i, 'SM_MAX'] = (1-(bd/(nld['density'])))
+                except:
+                    print(
+                        "Could not convert bulk density to soil moisture max. Check your units please.")
+            else:
+                bd = meta.at[i, 'BD_ISRIC']
+                meta.at[i, 'SM_MAX'] = (1-(bd/(nld['density'])))
+
             # ADD KG climate
             kg, meanprecip, meantemp = KG_func(meta, country, sitenum)
             meta.at[i, 'KG_CLIMATE'] = kg
@@ -812,5 +823,3 @@ def fill_metadata(meta, calc_beta=True, land_cover=True, agb=True):
                 header=True, index=False, mode='w')
 
     return meta
-
-# %%

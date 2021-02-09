@@ -52,7 +52,7 @@ def theta_calc(a0, a1, a2, bd, N, N0, lw, wsom):
     return (((a0)/((N/N0)-a1))-(a2)-lw-wsom)*bd
 
 
-def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
+def thetaprocess(df, meta, country, sitenum, yearlysmfig=True):
     """thetaprocess takes the dataframe provided by previous steps and uses the theta calculations
     to give an estimate of soil moisture. 
 
@@ -93,15 +93,26 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
         meta.SITENUM == sitenum), 'LW'].item()
     soc = meta.loc[(meta.COUNTRY == country) & (
         meta.SITENUM == sitenum), 'SOC'].item()
-    bd = meta.loc[(meta.COUNTRY == country) & (
-        meta.SITENUM == sitenum), 'BD'].item()
+    try:
+        bd = meta.loc[(meta.COUNTRY == country) & (
+            meta.SITENUM == sitenum), 'BD'].item()
+    except:
+        print("Couldn't find local bulk density data, using ISRIC data instead.")
+        bd = meta.loc[(meta.COUNTRY == country) & (
+            meta.SITENUM == sitenum), 'BD_ISRIC'].item()
     N0 = meta.loc[(meta.COUNTRY == country) & (
         meta.SITENUM == sitenum), 'N0'].item()
+
+    try:
+        sm_max = meta.loc[(meta.COUNTRY == country) & (
+            meta.SITENUM == sitenum), 'SM_MAX'].item()
+    except:
+        print("Couldn't find SM_MAX in metadata. Creating value from bulk density data")
+        sm_max = (1-(bd/(nld['density'])))
     # convert SOC to water equivelant (see Hawdon et al., 2014)
     soc = soc * 0.556
     hveg = 0  # Set to 0 to remove as data avilability low and impact low
     sm_min = 0  # Cannot have less than zero
-    sm_max = (1-(bd/(nld['density'])))  # Create a max realistic vol sm.
     print("Done")
     ###############################################################################
     #                       Import Data                                           #
@@ -123,11 +134,13 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
     df['SM_PLUS_ERR'] = df.apply(lambda row: theta_calc(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR_MINUS'], N0, lw,
                                                         soc), axis=1)  # Find error (inverse relationship so use MOD minus for soil moisture positive Error)
     df['SM_PLUS_ERR'] = df['SM_PLUS_ERR']
+    df['SM_PLUS_ERR'] = abs(df['SM_PLUS_ERR'] - df['SM'])
 
     df['SM_MINUS_ERR'] = df.apply(lambda row: theta_calc(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR_PLUS'], N0, lw,
                                                          soc), axis=1)
     df['SM_MINUS_ERR'] = df['SM_MINUS_ERR']
-
+    df['SM_MINUS_ERR'] = abs(df['SM_MINUS_ERR'] - df['SM'])
+    """
     # Remove values above or below max and min volsm
     df.loc[df['SM'] < sm_min, 'SM'] = 0
     df.loc[df['SM'] > sm_max, 'SM'] = sm_max
@@ -139,29 +152,10 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
     df.loc[df['SM_MINUS_ERR'] > sm_max, 'SM_MINUS_ERR'] = sm_max
     print("Done")
     df['SM_ERROR'] = (df['SM_PLUS_ERR'] - df['SM_MINUS_ERR'])/2
-
+    """
     # Take 12 hour average
     print("Averaging and writing table...")
     df['SM_12h'] = df['SM'].rolling(nld['smwindow'], min_periods=6).mean()
-
-    ################# Introduced to compare N0 (Schron) with N0 (Desilets) #############
-    """
-    This has been introduced in order to compare the two N0 methods. crspy will
-    calculate N0 from calibration data. Adding the original N0 means we can identify
-    how much impact this may have.
-    
-    NOTE: if using N0 from online sources they often "Scale" to a sensor in the network.
-        this needs to be corrected for as crspy does not scale to any sensors
-    """
-    if N0_2 != None:
-        df['SM_ogN0'] = df.apply(lambda row: theta_calc(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR'], N0_2, lw,
-                                                        soc), axis=1)
-        df['SM_ogN0'] = df['SM_ogN0']
-
-        df.loc[df['SM_ogN0'] < sm_min, 'SM_ogN0'] = 0
-        df.loc[df['SM_ogN0'] > sm_max, 'SM_ogN0'] = sm_max
-        df['SM_12h_ogN0'] = df['SM_ogN0'].rolling(
-            nld['smwindow'], min_periods=6).mean()
 
     #!!! df['SM_12h_SG'] = savgol_filter(df['SM'], 13, 4)#Cannot be used on data with nan values - consider another method?
 
@@ -180,7 +174,7 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
     df['D86_150m'] = df.apply(lambda row: D86(
         row['rs150m'], bd, (row['SM'])), axis=1)
     df['D86avg'] = (df['D86_10m'] + df['D86_75m'] + df['D86_150m']) / 3
-    df['D86avg_12h'] = df['D86avg'].rolling(window=nld['smwindow']).mean()
+    df['D86avg_12h'] = df['D86avg'].rolling(window=nld['smwindow'], min_periods=6).mean()
 
     # Write a "clean" file that is just corrected soil moisture and depth of measurement
     # removed "SM_12h_SG" for now
@@ -195,7 +189,7 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, N0_2=None):
     df.fillna(nld['noval'], inplace=True)
     df = df.round(3)
     df = df.drop(['rs10m', 'rs75m', 'rs150m', 'D86_10m',
-                  'D86_75m', 'D86_150m'], axis=1)  # ,
+                  'D86_75m', 'D86_150m', 'MOD_CORR_PLUS', 'MOD_CORR_MINUS'], axis=1)  # ,
     #     'MOD_CORR_PLUS', 'MOD_CORR_MINUS', 'SM_PLUS_ERR', 'SM_MINUS_ERR'], axis=1)
 
     df.to_csv(nld['defaultdir'] + "/data/crns_data/FINAL/"+country+"_SITE_"+sitenum+"_final.txt",
