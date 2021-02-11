@@ -166,7 +166,7 @@ def tseriesplots(var, df, defaultdir, country, sitenum):
     plt.figure(var, figsize=(10, 5))
     plt.title(var, fontsize=16)
     plt.plot(x, y, marker='o', markersize=0.3,  color='r', linewidth=0.3)
-    plt.savefig(defaultdir+"data/qa/"+country +
+    plt.savefig(defaultdir+"/data/qa/"+country +
                 "_Site_"+sitenum+"/"+var+".png", dpi=250)
     plt.close()
 
