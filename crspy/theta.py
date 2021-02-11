@@ -118,7 +118,7 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True):
     #                       Import Data                                           #
     ###############################################################################
     print("Calculating soil moisture along with estimated error...")
-    df = pd.read_csv(nld['defaultdir']+"data/crns_data/final/" +
+    df = pd.read_csv(nld['defaultdir']+"/data/crns_data/final/" +
                      country+"_SITE_"+sitenum+"_final.txt", sep="\t")
     df = df.replace(nld['noval'], np.nan)
 
