@@ -92,13 +92,13 @@ def prepare_data(fileloc, intentype=None):
         country = m.group(1)
     else:
         print("Could not find country from file name...")
-        return
+        
     m2 = re.search('SITE_(.+?).txt', tmp)
     if m2:
         sitenum = m2.group(1)
     else:
         print("Could not find country from file name...")
-        return
+        
 
     sitecode = country+"_SITE_"+sitenum  # create full title for use on ERA5Land data
 
@@ -189,11 +189,13 @@ def prepare_data(fileloc, intentype=None):
     print("Collecting ERA-5 Land variables...")
     try:
         era5 = xr.open_dataset(
-            nld['defaultdir']+"data/era5land/"+nld['era5_filename']+".nc")
+            nld['defaultdir']+"/data/era5land/"+nld['era5_filename']+".nc")
+        print('Read in file')
         try:
             era5site = era5.sel(site=sitecode)
         except:
             era5site = era5  # If user only has one site it breaks here - this stops that
+
         era5time = pd.to_datetime(era5site.time.values)
 
         # minus 273.15 to convert to celcius as era5 stores it as kelvin
@@ -205,7 +207,6 @@ def prepare_data(fileloc, intentype=None):
         swe_dict = dict(zip(era5time, era5site.snow_water_equiv.values*1000))
         # prcp is in meteres in ERA5 so convert to mm
         prcp_dict = dict(zip(era5time, era5site.precipitation.values*1000))
-
         # Introduced here to "correct" for the way ERA5_Land accumulates precipitation over 24 hours
         tmp = pd.DataFrame()
         tmp['DT'] = era5time
@@ -219,7 +220,6 @@ def prepare_data(fileloc, intentype=None):
         tmp.loc[tmp['HOUR'] == 1, ['TRUERAIN']] = tmp['RAIN']
 
         prcp_dict = dict(zip(tmp['DT'], tmp['TRUERAIN']))
-
         # Add the ERA5_Land data
         if df.E_TEM.mean() == nld['noval']:
             df['TEMP'] = df['DT'].map(temp_dict)
@@ -246,7 +246,6 @@ def prepare_data(fileloc, intentype=None):
             meta.loc[(meta['SITENUM'] == sitenum) & (
                 meta['COUNTRY'] == country), 'RH_DATA_SOURCE'] = 'Local'
             rh = True
-
         df['DEWPOINT_TEMP'] = df['DT'].map(dptemp_dict)
         df['SWE'] = df['DT'].map(swe_dict)
         df['ERA5L_PRESS'] = df['DT'].map(press_dict)
