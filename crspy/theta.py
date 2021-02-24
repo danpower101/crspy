@@ -140,7 +140,7 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True):
                                                          soc), axis=1)
     df['SM_MINUS_ERR'] = df['SM_MINUS_ERR']
     df['SM_MINUS_ERR'] = abs(df['SM_MINUS_ERR'] - df['SM'])
-    """
+    
     # Remove values above or below max and min volsm
     df.loc[df['SM'] < sm_min, 'SM'] = 0
     df.loc[df['SM'] > sm_max, 'SM'] = sm_max
@@ -151,8 +151,10 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True):
     df.loc[df['SM_MINUS_ERR'] < sm_min, 'SM_MINUS_ERR'] = 0
     df.loc[df['SM_MINUS_ERR'] > sm_max, 'SM_MINUS_ERR'] = sm_max
     print("Done")
-    df['SM_ERROR'] = (df['SM_PLUS_ERR'] - df['SM_MINUS_ERR'])/2
-    """
+
+
+    #df['SM_ERROR'] = (df['SM_PLUS_ERR'] - df['SM_MINUS_ERR'])/2
+    
     # Take 12 hour average
     print("Averaging and writing table...")
     df['SM_12h'] = df['SM'].rolling(nld['smwindow'], min_periods=6).mean()
