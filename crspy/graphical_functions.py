@@ -32,7 +32,7 @@ def colourts(country, sitenum, yearlysm):
     """
     meta = pd.read_csv(nld['defaultdir'] + "/data/metadata.csv")
     meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Add leading zeros
-    df = pd.read_csv(nld['defaultdir'] + "data/crns_data/final/"+country+"_SITE_"+sitenum+"_final.txt", sep="\t")
+    df = pd.read_csv(nld['defaultdir'] + "/data/crns_data/final/"+country+"_SITE_"+sitenum+"_final.txt", sep="\t")
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -55,7 +55,7 @@ def colourts(country, sitenum, yearlysm):
     print("Done")
     
     sitename = meta.loc[(meta.COUNTRY == country) & (meta.SITENUM == sitenum), 'SITE_NAME'].item()
-    df = pd.read_csv(nld['defaultdir'] + "data/crns_data/final/"+country+"_SITE_"+sitenum+"_final.txt", sep="\t")
+    df = pd.read_csv(nld['defaultdir'] + "/data/crns_data/final/"+country+"_SITE_"+sitenum+"_final.txt", sep="\t")
     ymax = df.SM_12h.max()
     ymaxplus = ymax*1.05
     df.loc[df.SM_12h == nld['noval'], "SM_12h"] = np.nan
@@ -87,7 +87,7 @@ def colourts(country, sitenum, yearlysm):
     ax.plot(dfdt['MOD_CORR'], lw=0.1, label="Neutron Counts - "+str(sitename)+", "+str(country), color='black')
     ax.set_title("Neutron Counts - "+str(sitename)+", "+str(country))
     ax.set_ylabel("Neutron Count")
-    fig.savefig(nld['defaultdir']+"data/figures/"+uniquefolder+"/MOD_CORR.png", dpi=250)
+    fig.savefig(nld['defaultdir']+"/data/figures/"+uniquefolder+"/MOD_CORR.png", dpi=250)
 
     
     #CREATE COLOUR TS PLOT
@@ -103,7 +103,7 @@ def colourts(country, sitenum, yearlysm):
     for i in range(len(colrange2)):
         ax.fill_between(dtime, lower_bound, sm, where=sm > gradrange[i], facecolor=colrange2[i],
                         alpha=0.2)
-    fig.savefig(nld['defaultdir']+"data/figures/"+uniquefolder+"/SM_all.png", dpi=250)
+    fig.savefig(nld['defaultdir']+"/data/figures/"+uniquefolder+"/SM_all.png", dpi=250)
 
 
     
@@ -131,6 +131,6 @@ def colourts(country, sitenum, yearlysm):
             for i in range(len(colrange2)):
                 ax.fill_between(dtime, lower_bound, sm, where=sm > gradrange[i], facecolor=colrange2[i],
                                 alpha=0.2)
-            fig.savefig(nld['defaultdir']+"data/figures/"+uniquefolder+"/SM_year_"+str(year)+".png", dpi=250)
+            fig.savefig(nld['defaultdir']+"/data/figures/"+uniquefolder+"/SM_year_"+str(year)+".png", dpi=250)
             
            
