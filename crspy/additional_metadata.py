@@ -406,6 +406,8 @@ Uses the ERA5_Land data for each site to give a KG class.
 def KG_func(meta, country, sitenum):
     """KG_func - Takes in the metadata along with a country/sitenum. Will then check to see if local data is available. If it is, it will calculate Koppen-Geigger climate classes using local data as well as Mean Annual Precipitation(MAP) and Mean Annual Temperature(MAT).
 
+    Based off the rules in Peel et al., (2007) https://hess.copernicus.org/articles/11/1633/2007/hess-11-1633-2007.pdf
+
     Parameters
     ----------
     meta : dataframe
