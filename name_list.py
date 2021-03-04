@@ -13,7 +13,7 @@ defaultdir = "C:/user/example_working_directory" # CHANGE THIS TO YOUR WORKING D
 
 noval = -999
 
-era5_filename = "era5land_all"
+era5_filename = "example_era5land"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
                                 # Pressure values
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
