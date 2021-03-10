@@ -69,8 +69,10 @@ When setting up your working directory the folder structure is written out for y
 
 [**References**](https://github.com/danpower101/crspy/wiki/References)
 
+### **Funding Information**
+The crspy tool was primarily funded by the Engineering and Physical Sciences Research Council (EPSRC) Water Informatics: Science and Engineering Centre for Doctoral Training (WISE-CDT) (grant number EP/L016214/1) with additional support from the Brazilian Experimental datasets for MUlti-Scale interactions in the critical zone under Extreme Drought (BEMUSED) (grant number NE/R004897/1) and the MOSAIC Digital Environment Feasibility Study (grant number NE/T005645/1), both projects funded by Natural Environment Research Council (NERC); as well as with the support from the International Atomic Energy Agency of the United Nations (IAEA/UN) (project CRP D12014)
+
 ## License
-GNU GPLv3
 GNU GPLv3 © [D. Power, R Rosolem, M Rico-Ramirez](2020-2021)
 
 
