@@ -827,7 +827,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
 
     def n0_calib_standalone(country="NON", sitenum="000", sensordata=None, calibdata=None, meta=None, defineaccuracy=0.01, bd=None, soc=None, lw=None):
         """n0_calib the full calibration process
-        If importing own sensor data, it must include DATE (as DateTime), PRESS, TEMP columns. It must also have either E_RH or VP. See github wiki for more details on columns.
+        If importing own sensor data, it must include DATE (as DateTime), PRESS, TEMP, MOD_CORR columns. It must also have either E_RH or VP. See github wiki for more details on columns.
 
         Parameters
         ----------
