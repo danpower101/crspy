@@ -40,6 +40,7 @@ accuracy = the accuracy desired
 """
 defaultbd = 1.43
 cdtformat = "%d/%m/%Y"
+sensor_date_format = "%d/%m/%Y %H:%M" # if using n0_calibration_standalone - here you define the date format of your sensor data
 accuracy = 0.01
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -108,5 +109,6 @@ nld = {
        "noval":noval,
        "pv0":pv0,
 	   "era5_filename":era5_filename,
-       "jung_ref":jung_ref
+       "jung_ref":jung_ref,
+       "sensor_date_format":sensor_date_format
        }
