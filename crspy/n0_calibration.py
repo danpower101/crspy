@@ -825,39 +825,39 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     """ This is the first attempt towards a standalone function. It may be possible to make a single function that can do it all but for now they will be kept seperate. This function is the same as the usual n0_calibration but is designed so that a user can use the calibration function without running the entire process.
     """
 
-    def n0_calib_standalone(country="NON", sitenum="000", sensordata=None, calibdata=None, meta=None, defineaccuracy=0.01, bd=None, soc=None, lw=None):
-        """n0_calib the full calibration process
-        If importing own sensor data, it must include DATE (as DateTime), PRESS, TEMP, MOD_CORR columns. It must also have either E_RH or VP. See github wiki for more details on columns.
+def n0_calib_standalone(country="NON", sitenum="000", sensordata=None, calibdata=None, meta=None, defineaccuracy=0.01, bd=None, soc=None, lw=None):
+    """n0_calib the full calibration process
+    If importing own sensor data, it must include DATE (as DateTime), PRESS, TEMP, MOD_CORR columns. It must also have either E_RH or VP. See github wiki for more details on columns.
 
-        Parameters
-        ----------
-        sensordata : dataframe (optional):
-            can input sensor dataframe here directly, it will find necessary variables from this data.
-        calibdata = dataframe (optional):
-            if you want to supply the calibration data directly to the function you can here. If not it will search for calibration data in the usual folder.
-        meta : dataframe (optional)
-            metadata dataframe usually used for storing values. Can now be skipped if providing values directly (such as bd, lw etc)
-        country : str
-            country of the site e.g. "USA"`
-        sitenum : str
-            sitenum of the site "e.g.
-        defineaccuracy : float
-            accuracy that is desired usually 0.01
-        bd : float (optional)
-            bulk density of the soil (average)
-        soc : float (optional)
-            soil organic carbon of the soil (average)
-        lw : float (optional)
-            lattice water of the soil (average)
-        
-        """
+    Parameters
+    ----------
+    sensordata : dataframe (optional):
+        can input sensor dataframe here directly, it will find necessary variables from this data.
+    calibdata = dataframe (optional):
+        if you want to supply the calibration data directly to the function you can here. If not it will search for calibration data in the usual folder.
+    meta : dataframe (optional)
+        metadata dataframe usually used for storing values. Can now be skipped if providing values directly (such as bd, lw etc)
+    country : str
+        country of the site e.g. "USA"`
+    sitenum : str
+        sitenum of the site "e.g.
+    defineaccuracy : float
+        accuracy that is desired usually 0.01
+    bd : float (optional)
+        bulk density of the soil (average)
+    soc : float (optional)
+        soil organic carbon of the soil (average)
+    lw : float (optional)
+        lattice water of the soil (average)
+
+    """
 
     print("~~~~~~~~~~~~~ N0 Calibration ~~~~~~~~~~~~~")
     # Bulk Density (bd), Site Name, Soil Organic Carbon (soc) and lattice water (lw) taken from meta data
     # Here using average of BD given in calibration data
     if country == "NON" or sitenum =="000":
         print("Country and/or sitenum hasn't been changed from default. The save file will be set to this so may overwrite old data. It is recommended to give a country and sitenum (as strings) for organising the outputs.")
-    
+
     if bd == None and meta == None:
         print("We need a bulk density reading. Please provide one and try again.")
         return
@@ -871,7 +871,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
             bdunavailable = True
     else:
         bdunavailable = False # added for closure of if else statement below
-    
+
     try:
         sitename = meta.loc[(meta.COUNTRY == country) & (
             meta.SITENUM == sitenum), 'SITE_NAME'].item()
@@ -895,7 +895,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~ HOUSEKEEPING ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    
+
     First some housekeeping - create folders for writing to later on
     """
     print("Creating Folders...")
@@ -918,7 +918,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~ CALIBRATION DATA READ AND TIDY ~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    
+
     Read in the calibration data and do some tidying to it
     """
     print("Fetching calibration data...")
@@ -945,7 +945,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
         df['DATE'] = df['DATE'].dt.date
         unidate = df.DATE.unique()
         print("Unique calibration dates found: "+str(unidate))
-    
+
     else:
         df = pd.read_csv(
             nld['defaultdir'] + "/data/calibration_data/Calib_"+country+"_SITE_" + sitenum+".csv")
@@ -977,11 +977,11 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~ FINDING RADIAL DISTANCES OF MEASUREMENTS ~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    
+
     Using the LOC column which combines directional heading and radial
     distance from sensor. It splits this column to give raidal distance
     in metres.
-    
+
     Try/except introduced as sometimes direction isn't available.
     """
     if "LOC" in df.columns:
@@ -1014,10 +1014,10 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~ PROVIDE A SINGLE NUMBER FOR DEPTH ~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    
+
     Calibration data has the depth given as a range in meters. For easier
     handling this is converted into an average depth of the range.
-    
+
     """
 
     print("Collecting additional data...")
@@ -1042,7 +1042,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~~ SEPERATE TABLES FOR EACH CALIB DAY ~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    
+
     It will look at the number of unique days identified above. It will then create
     seperate tables for each calibration day. 
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
@@ -1059,7 +1059,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~~~~ AVERAGE PRESSURE FOR EACH CALIB DAY ~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    
+
     We need average pressure for the functions further down the script. This will 
     find the average pressure - obtained from the level 1 data
     """
@@ -1070,14 +1070,14 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
         lvl1 = pd.read_csv(nld['defaultdir'] + "/data/crns_data/tidy/" +
                         country+"_SITE_" + sitenum+"_TIDY.txt", sep="\t")
     lvl1['DATE'] = pd.to_datetime(
-        lvl1['DT'], format='%Y/%m/%d')  # Use correct formatting
+        lvl1['DT'])#, format=nld['cdtformat'])  # Use correct formatting
     lvl1['DATE'] = lvl1['DATE'].dt.date     # Remove the time portion
     if lvl1['E_RH'].mean() == nld['noval']:
         isrh = False                         #Check if external RH is available
     else:
         isrh = True
         
-    
+
     lvl1[lvl1 == nld['noval']] = np.nan
 
     # Creates dictionary of dfs for calibration days found
@@ -1090,7 +1090,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     for i in range(len(dflvl1Days)):
         tmp = pd.DataFrame.from_dict(dflvl1Days[i])
         tmp = tmp[(tmp['DT'] > str(unidate[i])+' 16:00:00') & (tmp['DT']
-                                                               <= str(unidate[i])+' 23:00:00')]  # COSMOS time of Calib
+                                                                <= str(unidate[i])+' 23:00:00')]  # COSMOS time of Calib
         check = float(np.nanmean(tmp['PRESS'], axis=0))
 
         if np.isnan(check):
@@ -1104,7 +1104,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     for i in range(len(dflvl1Days)):
         tmp = pd.DataFrame.from_dict(dflvl1Days[i])
         tmp = tmp[(tmp['DT'] > str(unidate[i])+' 16:00:00') & (tmp['DT']
-                                                               <= str(unidate[i])+' 23:00:00')]  # COSMOS time of Calib
+                                                                <= str(unidate[i])+' 23:00:00')]  # COSMOS time of Calib
         check = float(np.nanmean(tmp['TEMP'], axis=0))
         # Very few sites had no data at time of COSMOS calib - if thats the case use day average
         if np.isnan(check):
@@ -1144,7 +1144,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~ THE BIG ITERATIVE LOOP - CALCULATE WEIGHTED THETA ~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    
+
     Below is the main loop that will iterate through the process oultined by 
     Schron et al., (2017). It iterate the weighting procedure until the defined
     accuracy is achieved. It will then repeat for as many calibration days there
@@ -1287,41 +1287,45 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
             # Below code will write the tables into the unique folder for checking
             # They will overwrite each time
             os.chdir(nld['defaultdir'] + "/data/n0_calibration/" +
-                     uniquefolder)  # Change wd
+                        uniquefolder)  # Change wd
             depthdf.to_csv(country + '_SITE_'+sitenum +   # Write the radial table
-                           '_RadiusWeighting' + str(unidate[i]) + '.csv', header=True, index=False,  mode='w')
+                            '_RadiusWeighting' + str(unidate[i]) + '.csv', header=True, index=False,  mode='w')
             df1.to_csv(country + '_SITE_'+sitenum +          # Write the depth table
-                       '_DepthWeighting' + str(unidate[i]) + '.csv', header=True, index=False,  mode='w')
+                        '_DepthWeighting' + str(unidate[i]) + '.csv', header=True, index=False,  mode='w')
             os.chdir(nld['defaultdir'])  # Change wd back
 
             Accuracy = abs((CalibTheta - thetainitial) /
-                           thetainitial)  # Calculate new accuracy
+                            thetainitial)  # Calculate new accuracy
         print("Done")
 
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~~ OPTIMISED N0 CALCULATION ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    
+
     We now check the optimal N0 value for this sensor. This is completed by iterating
     through calculations of soil moisture for each calibration date with the N0 value
     being replaced with values from 0 - 10,000. We can then see what the accuracy is
     for each possible N0 value. 
-    
+
     To optimise across calibration days these accuracy values are then summed for each
     N0 value across the calibration days. The lowest error value is then taken as the 
     correct N0.
-    
+
     """
     print("Finding Optimised N0...")
-    
+
     if isinstance(sensordata, pd.DataFrame):
         tmp=sensordata
     else:
         tmp = pd.read_csv(nld['defaultdir'] + '/data/crns_data/level1/' +
-                      country + '_SITE_'+sitenum+'_LVL1.txt', sep='\t')
+                        country + '_SITE_'+sitenum+'_LVL1.txt', sep='\t')
     # Use correct formatting - MAY NEED CHANGING AGAIN DUE TO EXCEL
-    tmp['DATE'] = pd.to_datetime(tmp['DT'], format="%Y-%m-%d %H:%M:%S")
+   
+    if isinstance(sensordata, pd.DataFrame):
+        tmp['DATE'] = pd.to_datetime(tmp['DT'], format=nld['sensor_date_format']) # set your own format
+    else:
+        tmp['DATE'] = pd.to_datetime(tmp['DT'], format="%Y-%m-%d %H:%M:%S") # default crspy routine
     tmp['DATE'] = tmp['DATE'].dt.date  # Remove the time portion to match above
     # replace -999 with nan for easier methods
     tmp = tmp.replace(nld['noval'], np.nan)
@@ -1333,10 +1337,10 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
         NeutCount[i] = tmpneut
         # Write a csv for the error for this calibration day
         os.chdir(nld['defaultdir'] + "/data/n0_calibration/" +
-                 uniquefolder)  # Change wd to folder
+                    uniquefolder)  # Change wd to folder
 
         tmpneut.to_csv(country + '_SITE_'+sitenum+'_MOD_AVG_TABLE_' + str(unidate[i]) + '.csv',
-                       header=True, index=False,  mode='w')
+                        header=True, index=False,  mode='w')
         os.chdir(nld['defaultdir'])  # Change back
 
     avgN = dict()
@@ -1344,9 +1348,9 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
         # Find the daily mean neutron count for each calibration day
         tmp = pd.DataFrame.from_dict(NeutCount[i])
         tmp = tmp[(tmp['DT'] > str(unidate[i])+' 16:00:00') & (tmp['DT']
-                                                               <= str(unidate[i])+' 23:00:00')]  # COSMOS time of Calib
+                                                                <= str(unidate[i])+' 23:00:00')]  # COSMOS time of Calib
         check = float(np.nanmean(tmp['MOD_CORR']))
-       # Need another catch to stop errors with missing data
+        # Need another catch to stop errors with missing data
         if np.isnan(check):
             # Find the daily mean neutron count for each calibration day
             tmp = pd.DataFrame.from_dict(NeutCount[i])
@@ -1368,7 +1372,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
             for j in range(len(N0)):
 
                 sm.loc[j] = ((nld["a0"] / ((Nave / N0.loc[j]) -
-                                           nld["a1"])) - nld["a2"] - lw - soc) * bd
+                                            nld["a1"])) - nld["a2"] - lw - soc) * bd
                 tmp = sm.iat[j, 0]
                 # Accuracy normalised to vwc
                 reler.loc[j] = abs((sm.iat[j, 0] - vwc)/vwc)
@@ -1377,20 +1381,20 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
 
             # Write a csv for the error for this calibration day
             os.chdir(nld['defaultdir'] + "/data/n0_calibration/" +
-                     uniquefolder)  # Change wd to folder
+                        uniquefolder)  # Change wd to folder
 
             reler['N0'] = range(0, 10000)  # Add N0 for csv write
 
             reler.to_csv(country + '_SITE_'+sitenum+'_error_' + str(unidate[i]) + '.csv',
-                         header=True, index=False,  mode='w')
+                            header=True, index=False,  mode='w')
             os.chdir(nld['defaultdir'])  # Change back
 
     """
                         N0 Optimisation
-    
+
     Need to optimise N0 based on all calibration days. This is done by taking a total
     mea from all sites. e.g. when N0 = 2000, sum mea for each calibration day at N0=2000.
-    
+
     This is then used as our error calculation so we minimise for that to give us N0.
     """
 
@@ -1428,7 +1432,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     plt.title('Sum Relative Error plot on log scale across all calibration days')
     plt.legend()
     os.chdir(nld['defaultdir'] + "/data/n0_calibration/" +
-             uniquefolder)  # Change wd to folder
+                uniquefolder)  # Change wd to folder
     plt.savefig("Relative_Error_Plot.png")
     os.chdir(nld['defaultdir'])
     plt.close()
@@ -1439,7 +1443,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     This report is going to outline all the variables and calculations that are used
     in the automated process. It is essential for the user to read through this and 
     identify if there is anything that seems incorrect.
-    
+
     Examples:   Too many/few calibration days
                 TempAvg is unrealistic
                 Calibration Dates are incorrect
@@ -1447,7 +1451,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
                 
     This should work correctly however mistakes are possible if, for example, the 
     data structure is wrong. This could cause knock on effects.
-    
+
     """
 
     N0R = "The optimised N0 is calculated as: \nN0   |  Total Relative Error  \n" + \
@@ -1458,7 +1462,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
         R2 = "The bulk density was " + str(bd)
     else:
         R2 = "The bulk density value wasn't available and so estimate of 1.43 was used"
-   # R3 = "The vegetation height was " +str(Hveg)+ " (m)"
+    # R3 = "The vegetation height was " +str(Hveg)+ " (m)"
     R4 = "The user defined accuracy was "+str(defineaccuracy)
     R5 = "The soil organic carbon was "+str(soc) + " g/m^3"
     R6 = "The lattice water content was " + str(lw)
@@ -1470,7 +1474,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
 
     # Make a folder for the site being processed
     os.chdir(nld['defaultdir'] + "/data/n0_calibration/" +
-             uniquefolder)  # Change wd to folder
+                uniquefolder)  # Change wd to folder
 
     # Write the user report file below
     f = open(country + "_"+sitenum+"_Report.txt", "w")
@@ -1482,7 +1486,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     totalerror = pd.DataFrame(totalerror)
     totalerror['N0'] = range(0, 10000)
     totalerror.to_csv(country + '_SITE_'+sitenum +
-                      'totalerror.csv', header=True, index=False,  mode='w')
+                        'totalerror.csv', header=True, index=False,  mode='w')
 
     os.chdir(nld['defaultdir'])  # Change back
     if isinstance(meta, pd.DataFrame):
