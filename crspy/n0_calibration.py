@@ -317,7 +317,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     df['DATE'] = df['DATE'].dt.date
 
     unidate = df.DATE.unique()  # Make object of unique dates (calib dates)
-    print("Unique calibration dates found: "+unidate)
+    print("Unique calibration dates found: "+str(unidate))
     print("Done")
 
     """
@@ -411,9 +411,9 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
         lvl1['DT'], format='%Y/%m/%d')  # Use correct formatting
     lvl1['DATE'] = lvl1['DATE'].dt.date     # Remove the time portion
     if lvl1['E_RH'].mean() == nld['noval']:
-        isrh = True                         #Check if external RH is available
+        isrh = False                         #Check if external RH is available
     else:
-        isrh = False
+        isrh = True
     lvl1[lvl1 == nld['noval']] = np.nan
 
     # Creates dictionary of dfs for calibration days found
