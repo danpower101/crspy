@@ -89,9 +89,11 @@ def flipif(filename):
         return
     tmp = pd.read_csv(nld['defaultdir'] + "/data/crns_data/raw/" +
                       country+"_SITE_" + sitenum+".txt", sep="\t")
+    tmp = tmp[~tmp.TIME.str.contains("2009")]  # remove data from 2009
+    tmp['TIME'] = pd.to_datetime(tmp['TIME']) # need to speed up by defining format (but formats vary). Maybe ifelse..
     if tmp['TIME'].iloc[0] > tmp['TIME'].iloc[-1]:
         tmp = tmp.iloc[::-1]
-        tmp = tmp[~tmp.TIME.str.contains("2009")]  # remove data from 2009
+       # tmp = tmp[~tmp.TIME.str.contains("2009")]  # remove data from 2009
         tmp.to_csv(nld['defaultdir'] + "/data/crns_data/raw/"+country+"_SITE_" +
                    sitenum+".txt", header=True, index=False, sep="\t",  mode='w')
     else:
@@ -109,7 +111,10 @@ def flipall(listfiles):
     for i in range(len(listfiles)):
         print(i)  # Add to see where error occurs if encountered
         filename = listfiles[i]
-        flipif(filename)
+        try:
+            flipif(filename)
+        except:
+            print("Couldn't complete "+str(filename))
 
 #listfiles = getlistoffiles(nld['defaultdir'] + "/data/crns_data/raw/")
 # flipall(listfiles)
