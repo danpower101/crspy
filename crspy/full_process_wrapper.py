@@ -8,6 +8,8 @@ Wrapper function to process the data from start to finish
 """
 from name_list import nld
 
+import re
+
 # crspy funcs
 from crspy.tidy_data import prepare_data
 from crspy.neutron_coeff_creation import neutcoeffs
@@ -15,7 +17,7 @@ from crspy.n0_calibration import n0_calib
 from crspy.qa import flag_and_remove
 from crspy.qa import QA_plotting
 from crspy.theta import thetaprocess
-
+from crspy.gen_funcs import getlistoffiles
 
 def process_raw_data(filepath, calibrate=True, intentype=None):
     """process_raw_data is a function that wraps all the necessary functions to process data. The user can select
@@ -41,6 +43,20 @@ def process_raw_data(filepath, calibrate=True, intentype=None):
         the corrected dataframe and metadata are output - they are also saved automatically during running into
         folder structure
     """
+    if calibrate is True:
+        
+        m = re.search('/crns_data/raw/(.+?).txt', filepath)
+        name = m.group(1).lower()
+        caliblist = getlistoffiles(nld['defaultdir']+"/data/calibration_data/")
+        caliblist = [item.lower() for item in caliblist]
+        if any(name in s for s in caliblist):
+            print("Calibration data is available, continuing...")
+        else:
+            print("No calibration data found for selected site, please ensure calibration data is available and labelled correctly or turn off the calibration routine.")
+            df=None
+            meta=None
+            return df,meta
+
     if intentype == "nearestGV":
         df, country, sitenum, meta, nmdbstation = prepare_data(
             filepath, intentype="nearestGV")
