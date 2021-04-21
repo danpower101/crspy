@@ -11,6 +11,7 @@ from name_list import nld
 
 import pandas as pd
 import numpy as np
+import math
 
 # crspy funcs
 from crspy.n0_calibration import (rscaled, D86)
@@ -96,10 +97,15 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True):
     try:
         bd = meta.loc[(meta.COUNTRY == country) & (
             meta.SITENUM == sitenum), 'BD'].item()
+        if math.isnan(bd):
+            print("BD is nan value, using ISRIC data instead.")
+            bd = meta.loc[(meta.COUNTRY == country) & (
+            meta.SITENUM == sitenum), 'BD_ISRIC'].item()
     except:
         print("Couldn't find local bulk density data, using ISRIC data instead.")
         bd = meta.loc[(meta.COUNTRY == country) & (
             meta.SITENUM == sitenum), 'BD_ISRIC'].item()
+    print("BD is "+str(bd))
     N0 = meta.loc[(meta.COUNTRY == country) & (
         meta.SITENUM == sitenum), 'N0'].item()
 

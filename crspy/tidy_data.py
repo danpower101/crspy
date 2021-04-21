@@ -155,14 +155,14 @@ def prepare_data(fileloc, intentype=None):
     df.drop(labels=['DT'], axis=1, inplace=True)  # Move DT to first col
     df.insert(0, 'DT', dtcol)
 
-    df = df.set_index(df.DT)
+    
     df['dupes'] = df.duplicated(subset="DT")
     # Add a save for dupes here - need to test a selection of sites to see
     # whether dupes are the same.
     df.to_csv(nld['defaultdir'] + "/data/crns_data/dupe_check/"+country+"_SITE_" + sitenum+"_DUPES.txt",
               header=True, index=False, sep="\t",  mode='w')
     df = df.drop(df[df.dupes == True].index)
-
+    df = df.set_index(df.DT)
     if df.DATE.iloc[0] > df.DATE.iloc[-1]:
         raise Exception(
             "The dates are the wrong way around, see crspy.flipall() to fix it")
@@ -251,7 +251,9 @@ def prepare_data(fileloc, intentype=None):
         df['ERA5L_PRESS'] = df['DT'].map(press_dict)
 
         # PRESS2 is more accurate pressure gauge - use if available and if not fill in with PRESS1
+        press_series = df['PRESS2']
         df['PRESS'] = df['PRESS2']
+        
         df.loc[df['PRESS'] == nld['noval'], 'PRESS'] = df['PRESS1']
         df = df.replace(nld['noval'], np.nan)
 

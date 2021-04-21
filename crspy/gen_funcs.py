@@ -89,11 +89,9 @@ def flipif(filename):
         return
     tmp = pd.read_csv(nld['defaultdir'] + "/data/crns_data/raw/" +
                       country+"_SITE_" + sitenum+".txt", sep="\t")
-    tmp = tmp[~tmp.TIME.str.contains("2009")]  # remove data from 2009
     tmp['TIME'] = pd.to_datetime(tmp['TIME']) # need to speed up by defining format (but formats vary). Maybe ifelse..
     if tmp['TIME'].iloc[0] > tmp['TIME'].iloc[-1]:
         tmp = tmp.iloc[::-1]
-       # tmp = tmp[~tmp.TIME.str.contains("2009")]  # remove data from 2009
         tmp.to_csv(nld['defaultdir'] + "/data/crns_data/raw/"+country+"_SITE_" +
                    sitenum+".txt", header=True, index=False, sep="\t",  mode='w')
     else:

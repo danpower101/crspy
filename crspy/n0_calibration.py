@@ -606,7 +606,10 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
 
             FinalTheta = depthdf.sum()
 
-            CalibTheta = FinalTheta['RadWeight'] / FinalTheta['Wr']
+            try:
+                CalibTheta = FinalTheta['RadWeight'] / FinalTheta['Wr']
+            except ZeroDivisionError:
+                print("A zero division was attempted. This usually indicates missing data around the calibration date.")
             AvgTheta[i] = CalibTheta
 
             """
@@ -647,14 +650,19 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     correct N0.
     
     """
-    print("Finding Optimised N0...")
+    print("Finding Optimised N0......")
     tmp = pd.read_csv(nld['defaultdir'] + '/data/crns_data/level1/' +
                       country + '_SITE_'+sitenum+'_LVL1.txt', sep='\t')
     # Use correct formatting - MAY NEED CHANGING AGAIN DUE TO EXCEL
+    tmp = tmp.replace(nld['noval'], np.nan)
+    #n_max = tmp['MOD_CORR'].max()
+    n_avg = int(np.nanmean(tmp['MOD_CORR']))
+
+    print("Avg N is for the site is  "+str(n_avg))
     tmp['DATE'] = pd.to_datetime(tmp['DT'], format="%Y-%m-%d %H:%M:%S")
     tmp['DATE'] = tmp['DATE'].dt.date  # Remove the time portion to match above
-    # replace -999 with nan for easier methods
-    tmp = tmp.replace(nld['noval'], np.nan)
+
+    
 
     NeutCount = dict()  # Create a dict for appending time series readings for each calib day
     for i in range(numdays):  # Create a df for each day with the CRNS readings
@@ -688,7 +696,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     with np.errstate(divide='ignore'):  # prevent divide by 0 error message
         for i in range(numdays):
             # Create a series of N0's to test from 0 to 10000
-            N0 = pd.Series(range(0, 10000))
+            N0 = pd.Series(range(n_avg, int(n_avg*2)))
             # Avg theta divided by 100 to be given as decimal
             vwc = AvgTheta[i]
             Nave = avgN[i]  # Taken as average for calibration period
@@ -709,7 +717,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
             os.chdir(nld['defaultdir'] + "/data/n0_calibration/" +
                      uniquefolder)  # Change wd to folder
 
-            reler['N0'] = range(0, 10000)  # Add N0 for csv write
+            reler['N0'] = range(n_avg, int(n_avg*2))  # Add N0 for csv write
 
             reler.to_csv(country + '_SITE_'+sitenum+'_error_' + str(unidate[i]) + '.csv',
                          header=True, index=False,  mode='w')
@@ -735,7 +743,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     minimum_error = min(totalerror)  # Find the minimum error value and assign
 
     totalerror = totalerror.to_frame()
-    totalerror['N0'] = range(0, len(reler))
+    totalerror['N0'] = range(n_avg, int(n_avg*2))
     # Create object that maintains the index value at min
     minindex = totalerror.loc[totalerror.RelErr == minimum_error]
     print("Done")
@@ -809,7 +817,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
 
     # Write total error table
     totalerror = pd.DataFrame(totalerror)
-    totalerror['N0'] = range(0, 10000)
+    totalerror['N0'] = range(n_avg, int(n_avg*2))
     totalerror.to_csv(country + '_SITE_'+sitenum +
                       'totalerror.csv', header=True, index=False,  mode='w')
 
@@ -1386,7 +1394,7 @@ def n0_calib_standalone(country="NON", sitenum="000", sensordata=None, calibdata
             os.chdir(nld['defaultdir'] + "/data/n0_calibration/" +
                         uniquefolder)  # Change wd to folder
 
-            reler['N0'] = range(n_max/2, n_max*2)  # Add N0 for csv write
+            reler['N0'] = range(int(n_max/2), int(n_max*2))  # Add N0 for csv write
 
             reler.to_csv(country + '_SITE_'+sitenum+'_error_' + str(unidate[i]) + '.csv',
                             header=True, index=False,  mode='w')
@@ -1414,7 +1422,7 @@ def n0_calib_standalone(country="NON", sitenum="000", sensordata=None, calibdata
     totalerror = totalerror.to_frame()
     
     #totalerror['N0'] = range(0, len(reler))
-    totalerror['N0'] = range(n_max/2, n_max*2)
+    totalerror['N0'] = range(int(n_max/2), int(n_max*2))
     # Create object that maintains the index value at min
     minindex = totalerror.loc[totalerror.RelErr == minimum_error]
     print("Done")
@@ -1489,7 +1497,7 @@ def n0_calib_standalone(country="NON", sitenum="000", sensordata=None, calibdata
 
     # Write total error table
     totalerror = pd.DataFrame(totalerror)
-    totalerror['N0'] = range(n_max/2, n_max*2)
+    totalerror['N0'] = range(int(n_max/2), int(n_max*2))
     totalerror.to_csv(country + '_SITE_'+sitenum +
                         'totalerror.csv', header=True, index=False,  mode='w')
 
