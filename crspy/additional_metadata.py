@@ -453,6 +453,7 @@ def KG_func(meta, country, sitenum):
         df.insert(0, 'DT', dtcol)
         df = df.set_index(df.DT)
         df['dupes'] = df.duplicated(subset="DT")
+        df = df.drop(df[df.dupes == True].index)
         idx = pd.date_range(
             df.DT.iloc[0], df.DT.iloc[-1], freq='1H', closed='left')
         df = df.reindex(idx, fill_value=nld['noval'])
