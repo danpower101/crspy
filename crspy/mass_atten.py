@@ -6,10 +6,14 @@ Created on Thu Apr  2 11:56:24 2020
 
 This function was provided by Darin Desilets (HydroInnova) and adapted for use in crspy.
 
+Reference for Beta Calculation:
+Desilets, D., 2021, Intensity correction factors for a cosmic ray neutron sensor, Hydroinnova Technical Document 21-01, doi: 10.5281/zenodo.4569062.
 
 Reference Pressure Calc (x0) from:
     Engineering ToolBox, (2003). Altitude above Sea Level and Air Pressure. [online] 
     Available at: https://www.engineeringtoolbox.com/air-altitude-pressure-d_462.html [Accessed 24/04/2020]. 
+    
+
 """
 import numpy as np
 
