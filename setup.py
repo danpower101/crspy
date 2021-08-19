@@ -18,7 +18,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='crspy',  # Required
-    version='1.1.0',  # Required
+    version='1.2.0',  # Required
     description='Toolbox for calibration and correction of Cosmic Ray Neutron Sensor data using globally available data sources',  # Optional
     long_description=long_description,  # Optional
     long_description_content_type='text/markdown',  # Optional (see note above)
@@ -26,17 +26,17 @@ setup(
     author='Daniel Power',  # Optional
     author_email='daniel.power@bristol.ac.uk',  # Optional
     packages=find_packages(exclude=['example', 'data']),  # Required
-#    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4',
+   # python_requires='==3.8',
     install_requires=[
-        "numpy>=1.18.1",
-        "pandas>=1.0.3",
-        "matplotlib>=3.2.0",
-        "seaborn>=0.10.0",
-        "cdsapi>=0.2.7",
-        "xarray>=0.15.1",
-        "scipy>=1.3.1",
-        "netCDF4>=1.5.3",
-        "beautifulsoup4>=4.8.2",
-        "ipykernel>=5.5.0"
+        "numpy==1.21.2",
+        "pandas==1.3.2",
+        "matplotlib==3.4.3",
+        "seaborn==0.11.2",
+        "cdsapi==0.5.1",
+        "xarray==0.19.0",
+        "scipy==1.7.1",
+        "netCDF4==1.5.7",
+        "beautifulsoup4==4.9.3",
+        "ipykernel==6.2.0"
     ],
 )

@@ -26,7 +26,7 @@ nld.read('config.ini')
 
 
 
-def era5landdl(area, years, months, variables, savename, nld=nld):
+def era5landdl(area, years, months, variables, savename, nld=nld, customloc=None):
     """era5landdl automate download of ERA5_Land data. See readme for instructions
     on preparing the computer log in to era5 land system necessary to run this code (www.github.com/danpower101/crspy)
 
@@ -54,13 +54,19 @@ def era5landdl(area, years, months, variables, savename, nld=nld):
     nld : dictionary
         nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
         This will store variables such as the wd and other global vars
+    customloc : None | string
+        customloc is by default None and will save into the working directory structure as standard. If you wish to save
+        your files in a custom location this can be replace with a string of the directory location.
     """
     nld=nld['config']
 
     for year in years:
         for month in months:
-            slocation = nld['defaultdir']+"/data/era5land/store/" + \
-                savename+"_"+str(year)+"_month"+str(month)+".nc"
+            if customloc == None:
+                slocation = nld['defaultdir']+"/data/era5land/store/" + \
+                    savename+"_"+str(year)+"_month"+str(month)+".nc"
+            else:
+                slocation = customloc+savename+"_"+str(year)+"_month"+str(month)+".nc"
             c = cdsapi.Client()
             c.retrieve(
                 'reanalysis-era5-land',
@@ -130,7 +136,7 @@ def era5landnetcdf(years, months, tol, loadname, savename, ogfile=None, nld=nld)
         This will store variables such as the wd and other global vars
     """
     nld=nld['config']
-    
+
     if savename == ogfile:
         print("Sorry, savename and ogfile cannot be the same. Please use a temporary name for the new save and change it after the process has completed.")
         return
