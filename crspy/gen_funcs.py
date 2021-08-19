@@ -14,8 +14,13 @@ import datetime
 import os
 import re
 import pandas as pd
-from name_list import nld
-
+"""
+To stop import issue with the config file when importing crspy in a wd without a config.ini file in it we need
+to read in the config file below and add `nld=nld['config']` into each function that requires the nld variables.
+"""
+from configparser import RawConfigParser
+nld = RawConfigParser()
+nld.read('config.ini')
 
 def datechange(year, yday):
     """
@@ -60,7 +65,7 @@ def getlistoffiles(dirName):
     return allFiles
 
 
-def flipif(filename):
+def flipif(filename, nld=nld):
     """flipif checks to see if time is in ascending or descending order and will convert if needed such
     that:
         time[0] == earliest date
@@ -73,7 +78,12 @@ def flipif(filename):
     filename : string 
         the filename to check
         e.g. "USA_SITE_011.txt"
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
+
     """
+    nld=nld['config']
     m = re.search('/crns_data/raw/(.+?)_',
                   filename)  # (.+?) here is the string being extracted between the series
     if m:

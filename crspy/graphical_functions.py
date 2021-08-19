@@ -7,17 +7,21 @@ Created on Mon Sep 14 16:35:56 2020
 Collection for graphical representation of data. Ways to show data.
 """
 
-
-from name_list import nld
 import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import math
 import seaborn as sns
+"""
+To stop import issue with the config file when importing crspy in a wd without a config.ini file in it we need
+to read in the config file below and add `nld=nld['config']` into each function that requires the nld variables.
+"""
+from configparser import RawConfigParser
+nld = RawConfigParser()
+nld.read('config.ini')
 
-
-def colourts(country, sitenum, yearlysm):
+def colourts(country, sitenum, yearlysm, nld=nld):
     """
     This function will output a series of plots and figures that can demonstrate
     conditions of a site for easy viewing.
@@ -29,7 +33,12 @@ def colourts(country, sitenum, yearlysm):
             e.g. "101"
         yearlysm: boolean - if turned to true it will output yearly 
                             plots of soil moisture for more granular viewing
+        nld : dictionary
+            nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+            This will store variables such as the wd and other global vars
+
     """
+    nld=nld['config']
     meta = pd.read_csv(nld['defaultdir'] + "/data/metadata.csv")
     meta['SITENUM'] = meta.SITENUM.map("{:03}".format) # Add leading zeros
     df = pd.read_csv(nld['defaultdir'] + "/data/crns_data/final/"+country+"_SITE_"+sitenum+"_final.txt", sep="\t")
@@ -58,8 +67,8 @@ def colourts(country, sitenum, yearlysm):
     df = pd.read_csv(nld['defaultdir'] + "/data/crns_data/final/"+country+"_SITE_"+sitenum+"_final.txt", sep="\t")
     ymax = df.SM_12h.max()
     ymaxplus = ymax*1.05
-    df.loc[df.SM_12h == nld['noval'], "SM_12h"] = np.nan
-    df.loc[df.MOD_CORR == nld['noval'], "MOD_CORR"] = np.nan
+    df.loc[df.SM_12h == int(nld['noval']), "SM_12h"] = np.nan
+    df.loc[df.MOD_CORR == int(nld['noval']), "MOD_CORR"] = np.nan
     sm = df['SM_12h']
     dtime = pd.to_datetime(df['DT'], format= "%Y-%m-%d %H:%M:%S") # Create dt series for using in fill_between
     lower_bound = 0

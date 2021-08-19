@@ -10,26 +10,31 @@ the required info. Second it will begin to analyse this info and correct neutron
 counts based on Pressure, Water Humidity, Solar Intensity and Above Ground Biomass.    
 
 """
-from crspy.neutron_correction_funcs import (es, ea, dew2vap)
-from crspy.additional_metadata import nmdb_get
+
 import pylab
 import xarray as xr
 import datetime
 import re
 import numpy as np
 import pandas as pd  # Pandas for dataframe
-from name_list import nld
-import os
-os.chdir(nld['defaultdir'])
 pylab.show()
 
+from crspy.neutron_correction_funcs import (es, ea, dew2vap)
+from crspy.additional_metadata import nmdb_get
+"""
+To stop import issue with the config file when importing crspy in a wd without a config.ini file in it we need
+to read in the config file below and add `nld=nld['config']` into each function that requires the nld variables.
+"""
+from configparser import RawConfigParser
+nld = RawConfigParser()
+nld.read('config.ini')
 
 ###############################################################################
 #                       Get list of files                                     #
 ###############################################################################
 
 
-def dropemptycols(colstocheck, df):
+def dropemptycols(colstocheck, df, nld=nld):
     """dropemptycols drop any columns that are empty (i.e. all -999)
 
     Parameters
@@ -40,11 +45,12 @@ def dropemptycols(colstocheck, df):
         dataframe to check
 
     """
+    nld=nld['config']
     for i in range(len(colstocheck)):
         col = colstocheck[i]
         if col in df:
             try:
-                if df[col].mean() == nld['noval']:
+                if df[col].mean() == int(nld['noval']):
                     df = df.drop([col], axis=1)
                 else:
                     pass
@@ -55,7 +61,7 @@ def dropemptycols(colstocheck, df):
     return df
 
 
-def prepare_data(fileloc, intentype=None):
+def prepare_data(fileloc, intentype=None, nld=nld):
     """prepare_data provided with the location of the raw data it will prepare the data.
 
     Steps include: 
@@ -71,8 +77,12 @@ def prepare_data(fileloc, intentype=None):
         string of the location of the file on the users computer
     intentype : str, optional
         can be set to nearestGV if using the alternative method, by default None
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
 
     """
+    nld=nld['config']
 
     print("~~~~~~~~~~~~~ Start TidyUp ~~~~~~~~~~~~~")
     ###############################################################################
@@ -169,7 +179,9 @@ def prepare_data(fileloc, intentype=None):
 
     idx = pd.date_range(
         df.DATE.iloc[0], df.DATE.iloc[-1], freq='1H', closed='left')
-    df = df.reindex(idx, fill_value=nld['noval'])
+    df = df.reindex(idx, fill_value=np.nan)
+    df = df.replace(np.nan, int(nld['noval'])) # add replace to make checks on whole cols later
+
     df['DT'] = df.index
     print("Done")
     ###############################################################################
@@ -221,7 +233,7 @@ def prepare_data(fileloc, intentype=None):
 
         prcp_dict = dict(zip(tmp['DT'], tmp['TRUERAIN']))
         # Add the ERA5_Land data
-        if df.E_TEM.mean() == nld['noval']:
+        if df.E_TEM.mean() == int(nld['noval']):
             df['TEMP'] = df['DT'].map(temp_dict)
             meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY']
                                                      == country), 'TEM_DATA_SOURCE'] = 'ERA5_Land'
@@ -230,7 +242,7 @@ def prepare_data(fileloc, intentype=None):
             meta.loc[(meta['SITENUM'] == sitenum) & (
                 meta['COUNTRY'] == country), 'TEM_DATA_SOURCE'] = 'Local'
 
-        if df.RAIN.mean() == nld['noval']:
+        if df.RAIN.mean() == int(nld['noval']):
             df['RAIN'] = df['DT'].map(prcp_dict)
             meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY']
                                                      == country), 'RAIN_DATA_SOURCE'] = 'ERA5_Land'
@@ -238,7 +250,7 @@ def prepare_data(fileloc, intentype=None):
             meta.loc[(meta['SITENUM'] == sitenum) & (
                 meta['COUNTRY'] == country), 'RAIN_DATA_SOURCE'] = 'Local'
 
-        if df.E_RH.mean() == nld['noval']:
+        if df.E_RH.mean() == int(nld['noval']):
             rh = False
             meta.loc[(meta['SITENUM'] == sitenum) & (
                 meta['COUNTRY'] == country), 'RH_DATA_SOURCE'] = 'None'
@@ -254,8 +266,8 @@ def prepare_data(fileloc, intentype=None):
         press_series = df['PRESS2']
         df['PRESS'] = df['PRESS2']
         
-        df.loc[df['PRESS'] == nld['noval'], 'PRESS'] = df['PRESS1']
-        df = df.replace(nld['noval'], np.nan)
+        df.loc[df['PRESS'] == int(nld['noval']), 'PRESS'] = df['PRESS1']
+        df = df.replace(int(nld['noval']), np.nan)
 
         if rh == False:
             df['VP'] = df.apply(lambda row: dew2vap(
@@ -271,8 +283,8 @@ def prepare_data(fileloc, intentype=None):
     except:
         # Introduced this bit to allow using sites that don't need ERA5_Land
         df['PRESS'] = df['PRESS2']
-        df.loc[df['PRESS'] == nld['noval'], 'PRESS'] = df['PRESS1']  # !!!added
-        df = df.replace(nld['noval'], np.nan)
+        df.loc[df['PRESS'] == int(nld['noval']), 'PRESS'] = df['PRESS1']  # !!!added
+        df = df.replace(int(nld['noval']), np.nan)
 
         df['TEMP'] = df['E_TEM']
 
@@ -294,7 +306,7 @@ def prepare_data(fileloc, intentype=None):
         key, value = min(nmdblist.items(), key=lambda x: abs(sitegv - x[1]))
         print("Getting NMDB data from "+str(key))
         nmdbdict = nmdb_get(startdate, enddate, station=str(key))
-        df['NMDB_COUNT'] = nld['noval']  # make sure its empty
+        df['NMDB_COUNT'] = int(nld['noval'])  # make sure its empty
         df['NMDB_COUNT'] = df['DT'].map(nmdbdict)
         # Keep as Jung Count to save changing scripts
         df['NMDB_COUNT'] = df['NMDB_COUNT'].astype(float)
@@ -304,7 +316,7 @@ def prepare_data(fileloc, intentype=None):
 
         try:
             nmdbdict = nmdb_get(startdate, enddate)
-            df['NMDB_COUNT'] = nld['noval']  # make sure its empty
+            df['NMDB_COUNT'] = int(nld['noval']) # make sure its empty
             df['NMDB_COUNT'] = df['DT'].map(nmdbdict)
             df['NMDB_COUNT'] = df['NMDB_COUNT'].astype(float)
             print("Done")
@@ -344,9 +356,9 @@ def prepare_data(fileloc, intentype=None):
     # Add list of columns that some sites wont have data on - removes them if empty
     df = dropemptycols(df.columns.tolist(), df)
     df = df.round(3)
-    df = df.replace(np.nan, nld['noval'])
+    df = df.replace(np.nan, int(nld['noval']))
     # SD card data had some 0 values - should be nan
-    df['MOD'] = df['MOD'].replace(0, nld['noval'])
+    df['MOD'] = df['MOD'].replace(0, int(nld['noval']))
     # Change Order
 
     meta.to_csv(nld['defaultdir'] + "/data/metadata.csv",

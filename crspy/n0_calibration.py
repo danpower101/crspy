@@ -15,7 +15,6 @@ References:
     
 """
 # Load up the packages needed at the begining of the code
-from name_list import nld
 import pandas as pd  # Pandas for dataframe
 import re
 import os
@@ -29,12 +28,18 @@ from crspy.neutron_correction_funcs import pv, es, ea
 
 # Brought in to stop warning around missing data
 warnings.filterwarnings("ignore", category=RuntimeWarning)
+"""
+To stop import issue with the config file when importing crspy in a wd without a config.ini file in it we need
+to read in the config file below and add `nld=nld['config']` into each function that requires the nld variables.
+"""
+from configparser import RawConfigParser
+nld = RawConfigParser()
+nld.read('config.ini')
 
 """ 
 Functions from Shcron et al 2017
      
 """
-
 
 def WrX(r, x, y):
     """WrX Radial Weighting function for point measurements taken within 5m of sensor
@@ -229,7 +234,7 @@ def rscaled(r, p, Hveg, y):
     return(r / Fp / Fveg)
 
 
-def n0_calib(meta, country, sitenum, defineaccuracy):
+def n0_calib(meta, country, sitenum, defineaccuracy, nld=nld):
     """n0_calib the full calibration process
 
     Parameters
@@ -242,7 +247,12 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
         sitenum of the site "e.g.
     defineaccuracy : float
         accuracy that is desired usually 0.01
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
+
     """
+    nld=nld['config']
 
     print("~~~~~~~~~~~~~ N0 Calibration ~~~~~~~~~~~~~")
     # Bulk Density (bd), Site Name, Soil Organic Carbon (soc) and lattice water (lw) taken from meta data
@@ -410,11 +420,11 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     lvl1['DATE'] = pd.to_datetime(
         lvl1['DT'], format='%Y/%m/%d')  # Use correct formatting
     lvl1['DATE'] = lvl1['DATE'].dt.date     # Remove the time portion
-    if lvl1['E_RH'].mean() == nld['noval']:
+    if lvl1['E_RH'].mean() == int(nld['noval']):
         isrh = False                         #Check if external RH is available
     else:
         isrh = True
-    lvl1[lvl1 == nld['noval']] = np.nan
+    lvl1[lvl1 == int(nld['noval'])] = np.nan
 
     # Creates dictionary of dfs for calibration days found
     dflvl1Days = dict()
@@ -654,7 +664,7 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
     tmp = pd.read_csv(nld['defaultdir'] + '/data/crns_data/level1/' +
                       country + '_SITE_'+sitenum+'_LVL1.txt', sep='\t')
     # Use correct formatting - MAY NEED CHANGING AGAIN DUE TO EXCEL
-    tmp = tmp.replace(nld['noval'], np.nan)
+    tmp = tmp.replace(int(nld['noval']), np.nan)
     #n_max = tmp['MOD_CORR'].max()
     n_avg = int(np.nanmean(tmp['MOD_CORR']))
 
@@ -705,8 +715,8 @@ def n0_calib(meta, country, sitenum, defineaccuracy):
 
             for j in range(len(N0)):
 
-                sm.loc[j] = ((nld["a0"] / ((Nave / N0.loc[j]) -
-                                           nld["a1"])) - nld["a2"] - lw - soc) * bd
+                sm.loc[j] = ((float(nld["a0"]) / ((Nave / N0.loc[j]) -
+                                           float(nld["a1"]))) - float(nld["a2"]) - lw - soc) * bd
                 tmp = sm.iat[j, 0]
                 # Accuracy normalised to vwc
                 reler.loc[j] = abs((sm.iat[j, 0] - vwc)/vwc)

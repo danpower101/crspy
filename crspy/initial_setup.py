@@ -10,8 +10,6 @@ This package will initialise the file structure in the working directory.
 
 import os
 import pandas as pd
-from name_list import nld
-
 
 def initial(wd):
     """

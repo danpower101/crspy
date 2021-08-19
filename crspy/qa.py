@@ -4,18 +4,20 @@ Created on Tue Dec 17 11:22:52 2019
 
 @author: vq18508
 """
-from name_list import nld
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
 import os
 
+from configparser import RawConfigParser
+nld = RawConfigParser()
+nld.read('config.ini')
 
 ###############################################################################
 #                          The flagging                                       #
 ###############################################################################
-def flag_and_remove(df, N0, country, sitenum):
+def flag_and_remove(df, N0, country, sitenum, nld=nld):
     """flag_and_remove identifies data that should be flagged based on the following criteria and removes it:
     Flags:
         1 = fast neutron counts more than 20% difference to previous count
@@ -34,8 +36,12 @@ def flag_and_remove(df, N0, country, sitenum):
         string of country e.g. "USA"
     sitenum : str
         string o sitenum e.g. "011"
-    """
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
 
+    """
+    nld=nld['config']
     print("~~~~~~~~~~~~~ Flagging and Removing ~~~~~~~~~~~~~")
     print("Identifying erroneous data...")
     idx = df['DT']
@@ -58,13 +64,13 @@ def flag_and_remove(df, N0, country, sitenum):
     df2.loc[df2.MOD_CORR > N0, "FLAG"] = 3
     df = df.drop(df[df.MOD_CORR > N0].index)   # drop above N0
 
-    df2.loc[(df2.MOD_CORR < (N0*(nld['belowN0']/100))) &
-            (df2.MOD_CORR != nld['noval']), "FLAG"] = 2
+    df2.loc[(df2.MOD_CORR < (N0*(int(nld['belowN0'])/100))) &
+            (df2.MOD_CORR != int(nld['noval'])), "FLAG"] = 2
     # drop below 0.3 N0
-    df = df.drop(df[df.MOD_CORR < (N0*(nld['belowN0']/100))].index)
+    df = df.drop(df[df.MOD_CORR < (N0*(int(nld['belowN0'])/100))].index)
    # df = df.reset_index(drop=True)
 
-    df2.loc[(df2.BATT < 10) & (df2.BATT != nld['noval']), "FLAG"] = 4
+    df2.loc[(df2.BATT < 10) & (df2.BATT != int(nld['noval'])), "FLAG"] = 4
     df = df.drop(df[df.BATT < 10].index)
 
    # df = df.reset_index(drop=True)
@@ -93,25 +99,25 @@ def flag_and_remove(df, N0, country, sitenum):
 
     df['INDEX_TMP'] = df.index
 
-    diff1 = df.loc[(df['PRCNTDIFF'] > nld['timestepdiff']), "INDEX_TMP"]
+    diff1 = df.loc[(df['PRCNTDIFF'] > int(nld['timestepdiff'])), "INDEX_TMP"]
     #diff1 = diff1[0]
-    diff2 = df.loc[(df['PRCNTDIFF'] < (-nld['timestepdiff'])), "INDEX_TMP"]
+    diff2 = df.loc[(df['PRCNTDIFF'] < (-int(nld['timestepdiff']))), "INDEX_TMP"]
     #diff2 = diff2[0]
 
     df2 = df2.reset_index(drop=True)
     df2.loc[diff1, "FLAG"] = 1
     df2.loc[diff2, "FLAG"] = 1
 
-    df = df.drop(df[df.PRCNTDIFF > nld['timestepdiff']].index)
-    df = df.drop(df[df.PRCNTDIFF < (-nld['timestepdiff'])].index)
+    df = df.drop(df[df.PRCNTDIFF > int(nld['timestepdiff'])].index)
+    df = df.drop(df[df.PRCNTDIFF < (-int(nld['timestepdiff']))].index)
     #df = df.reset_index(drop=True)
 
     # Fill in master time again after removing
     # Need this to handle below code
-    df.replace(nld['noval'], np.nan, inplace=True)
+    df.replace(int(nld['noval']), np.nan, inplace=True)
     df['DT'] = pd.to_datetime(df['DT'], format="%Y-%m-%d %H:%M:%S")
     df = df.set_index(df.DT)
-    df = df.reindex(idx, fill_value=nld['noval'])
+    df = df.reindex(idx, fill_value=np.nan)
     df['DT'] = pd.to_datetime(df['DT'])
 
     flagseries = df2['FLAG']
@@ -133,7 +139,7 @@ def flag_and_remove(df, N0, country, sitenum):
     df['DEWPOINT_TEMP'] = tmpdp
     df['SWE'] = tmpswe
 
-    df = df.replace(np.nan, nld['noval'])
+    df = df.replace(np.nan, int(nld['noval']))
 
     df.to_csv(nld['defaultdir'] + "/data/crns_data/FINAL/"+country+"_SITE_" + sitenum+"_final.txt",
               header=True, index=False, sep="\t", mode='w')
@@ -160,6 +166,7 @@ def tseriesplots(var, df, defaultdir, country, sitenum):
         country e.g. "USA"
     sitenum : str
         sitenum e.g. "011"
+    
     """
     x = df['DT']
     y = df[var]
@@ -171,7 +178,7 @@ def tseriesplots(var, df, defaultdir, country, sitenum):
     plt.close()
 
 
-def QA_plotting(df, country, sitenum, defaultdir):
+def QA_plotting(df, country, sitenum, defaultdir, nld=nld):
     """QA_plotting function to output QA plots
 
     Parameters
@@ -184,12 +191,16 @@ def QA_plotting(df, country, sitenum, defaultdir):
         sitenum e.g. "011"
     defaultdir : str
         working directory
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
 
     """
+    nld=nld['config']
     print("~~~~~~~~~~~~~ Plotting QA Graphs ~~~~~~~~~~~~~")
     print("Saving plots...")
     # set error to nan values for plotting
-    df = df.replace(nld['noval'], np.nan)
+    df = df.replace(int(nld['noval']), np.nan)
     df['YEAR'] = df['DT'].dt.year
     df['MONTH'] = df['DT'].dt.month
     df['DAY'] = df['DT'].dt.day
@@ -264,6 +275,6 @@ def QA_plotting(df, country, sitenum, defaultdir):
     except:
         print("No I_RH data")
     df = df.drop(['YEAR', 'MONTH', 'DAY'], axis=1)
-    df = df.replace(np.nan, nld['noval'])
+    df = df.replace(np.nan, int(nld['noval']))
     print("Done")
     return df

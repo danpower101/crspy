@@ -6,9 +6,6 @@ Email: daniel.power@bristol.ac.uk
 
 
 """
-
-from name_list import nld
-
 import pandas as pd
 import numpy as np
 import math
@@ -16,6 +13,13 @@ import math
 # crspy funcs
 from crspy.n0_calibration import (rscaled, D86)
 from crspy.graphical_functions import colourts
+"""
+To stop import issue with the config file when importing crspy in a wd without a config.ini file in it we need
+to read in the config file below and add `nld=nld['config']` into each function that requires the nld variables.
+"""
+from configparser import RawConfigParser
+nld = RawConfigParser()
+nld.read('config.ini')
 
 ###############################################################################
 #                       Add the sitenum/country                               #
@@ -53,7 +57,7 @@ def theta_calc(a0, a1, a2, bd, N, N0, lw, wsom):
     return (((a0)/((N/N0)-a1))-(a2)-lw-wsom)*bd
 
 
-def thetaprocess(df, meta, country, sitenum, yearlysmfig=True):
+def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, nld=nld):
     """thetaprocess takes the dataframe provided by previous steps and uses the theta calculations
     to give an estimate of soil moisture. 
 
@@ -81,10 +85,11 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True):
         sitenum e.g. "011"
     yearlysmfig : bool, optional
         whether to output yearly figures when creating time series, by default True
-    N0_2 : int, optional
-        This has been added to allow comparison of original N0, by default None
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
     """
-
+    nld=nld['config']
     print("~~~~~~~~~~~~~ Estimate Soil Moisture ~~~~~~~~~~~~~")
     ###############################################################################
     #                       Constants                                             #
@@ -114,7 +119,7 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True):
             meta.SITENUM == sitenum), 'SM_MAX'].item()
     except:
         print("Couldn't find SM_MAX in metadata. Creating value from bulk density data")
-        sm_max = (1-(bd/(nld['density'])))
+        sm_max = (1-(bd/(float(nld['density']))))
     # convert SOC to water equivelant (see Hawdon et al., 2014)
     soc = soc * 0.556
     hveg = 0  # Set to 0 to remove as data avilability low and impact low
@@ -126,23 +131,23 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True):
     print("Calculating soil moisture along with estimated error...")
     df = pd.read_csv(nld['defaultdir']+"/data/crns_data/final/" +
                      country+"_SITE_"+sitenum+"_final.txt", sep="\t")
-    df = df.replace(nld['noval'], np.nan)
+    df = df.replace(int(nld['noval']), np.nan)
 
     # Create MOD count to min and max of error
     df['MOD_CORR_PLUS'] = df['MOD_CORR'] + df['MOD_ERR']
     df['MOD_CORR_MINUS'] = df['MOD_CORR'] - df['MOD_ERR']
 
     # Calculate soil moisture - including min and max error
-    df['SM'] = df.apply(lambda row: theta_calc(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR'], N0, lw,
+    df['SM'] = df.apply(lambda row: theta_calc(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, row['MOD_CORR'], N0, lw,
                                                soc), axis=1)
     df['SM'] = df['SM']
 
-    df['SM_PLUS_ERR'] = df.apply(lambda row: theta_calc(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR_MINUS'], N0, lw,
+    df['SM_PLUS_ERR'] = df.apply(lambda row: theta_calc(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, row['MOD_CORR_MINUS'], N0, lw,
                                                         soc), axis=1)  # Find error (inverse relationship so use MOD minus for soil moisture positive Error)
     df['SM_PLUS_ERR'] = df['SM_PLUS_ERR']
     df['SM_PLUS_ERR'] = abs(df['SM_PLUS_ERR'] - df['SM'])
 
-    df['SM_MINUS_ERR'] = df.apply(lambda row: theta_calc(nld['a0'], nld['a1'], nld['a2'], bd, row['MOD_CORR_PLUS'], N0, lw,
+    df['SM_MINUS_ERR'] = df.apply(lambda row: theta_calc(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, row['MOD_CORR_PLUS'], N0, lw,
                                                          soc), axis=1)
     df['SM_MINUS_ERR'] = df['SM_MINUS_ERR']
     df['SM_MINUS_ERR'] = abs(df['SM_MINUS_ERR'] - df['SM'])
@@ -163,7 +168,7 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True):
     
     # Take 12 hour average
     print("Averaging and writing table...")
-    df['SM_12h'] = df['SM'].rolling(nld['smwindow'], min_periods=6).mean()
+    df['SM_12h'] = df['SM'].rolling(int(nld['smwindow']), min_periods=6).mean()
 
     #!!! df['SM_12h_SG'] = savgol_filter(df['SM'], 13, 4)#Cannot be used on data with nan values - consider another method?
 
@@ -182,19 +187,19 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True):
     df['D86_150m'] = df.apply(lambda row: D86(
         row['rs150m'], bd, (row['SM'])), axis=1)
     df['D86avg'] = (df['D86_10m'] + df['D86_75m'] + df['D86_150m']) / 3
-    df['D86avg_12h'] = df['D86avg'].rolling(window=nld['smwindow'], min_periods=6).mean()
+    df['D86avg_12h'] = df['D86avg'].rolling(window=int(nld['smwindow']), min_periods=6).mean()
 
     # Write a "clean" file that is just corrected soil moisture and depth of measurement
     # removed "SM_12h_SG" for now
     smclean = pd.DataFrame(
         df, columns=["DT", "SM", "D86avg", "SM_12h",  "D86avg_12h"])
-    smclean = smclean.replace(np.nan, nld['noval'])
+    smclean = smclean.replace(np.nan, int(nld['noval']))
     smclean = smclean.round(3)
     smclean.to_csv(nld['defaultdir'] + "/data/crns_data/simple/"+country+"_SITE_" + sitenum+"_simple.txt",
                    header=True, index=False, sep="\t", mode='w')
 
     # Replace nans with -999
-    df.fillna(nld['noval'], inplace=True)
+    df.fillna(int(nld['noval']), inplace=True)
     df = df.round(3)
     df = df.drop(['rs10m', 'rs75m', 'rs150m', 'D86_10m',
                   'D86_75m', 'D86_150m', 'MOD_CORR_PLUS', 'MOD_CORR_MINUS'], axis=1)  # ,

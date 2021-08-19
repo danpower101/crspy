@@ -6,7 +6,6 @@ Created on Mon May 18 11:12:09 2020
 @email: daniel.power@bristol.ac.uk
 """
 
-from name_list import nld
 import requests
 import xarray as xr
 import pandas as pd
@@ -20,6 +19,15 @@ import math
 # crspy funcs
 from crspy.gen_funcs import getlistoffiles
 from crspy.mass_atten import betacoeff
+
+
+"""
+To stop import issue with the config file when importing crspy in a wd without a config.ini file in it we need
+to read in the config file below and add `nld=nld['config']` into each function that requires the nld variables.
+"""
+from configparser import RawConfigParser
+nld = RawConfigParser()
+nld.read('config.ini')
 
 
 def isric_variables(lat, lon):
@@ -203,11 +211,19 @@ def soil_texture(sand, silt, clay):
 ############# Land Cover Data ###########################
 
 
-def dl_land_cover():
+def dl_land_cover(nld=nld):
     """
     Downloads the 2018 global land cover dataset from the cdsapi:
 
+    Parameters
+    ----------
+
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
+
     """
+    nld=nld['config']
     print("Downloading...")
     c = cdsapi.Client()
     savezip = nld['defaultdir']+'/data/land_cover_data/land_cover.zip'
@@ -231,7 +247,7 @@ def dl_land_cover():
     print("Done")
 
 
-def find_lc(lat, lon):
+def find_lc(lat, lon, nld=nld):
     """find_lc uses latitude and longitude to extract land cover data from the ESA_CCI data.
 
     Parameters
@@ -240,12 +256,16 @@ def find_lc(lat, lon):
         latitude of the site (degrees)
     lon : float
         longitude of the site (degrees)
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
 
     Returns
     -------
     string
         land cover value from the grid
     """
+    nld=nld['config'] 
     landdat = getlistoffiles(nld['defaultdir'] + "/data/land_cover_data/")
 
     # Open file
@@ -264,9 +284,15 @@ def find_lc(lat, lon):
 
 
 ####################### AGB data ##############################################
-def dl_agb():
+def dl_agb(nld=nld):
     """
     Downloads the above ground biomass dataset from the ESA-CCI database and stores in data.
+
+    Parameters
+    ----------
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
 
     """
     print("Downloading...")
@@ -275,7 +301,7 @@ def dl_agb():
     print("Done")
 
 
-def get_agb(lat, lon, tol=0.001):
+def get_agb(lat, lon, tol=0.001, nld=nld):
     """get_agb uses latitude and longitude to extract the above ground biomass data from the ESA_CCI dataset
 
     Parameters
@@ -286,12 +312,16 @@ def get_agb(lat, lon, tol=0.001):
         longitude of site (degrees)
     tol : float, optional
         tolerance for finding nearest grid point, by default 0.001
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
 
     Returns
     -------
     float
         above ground biomass value in kg/m2
     """
+    nld=nld['config']
     ncfile = nld['defaultdir'] + \
         "/data/global_biomass_netcdf/ESACCI-BIOMASS-L4-AGB-MERGED-100m-2017-fv1.0.nc"
     with xr.open_dataset(ncfile) as ds:
@@ -304,7 +334,7 @@ def get_agb(lat, lon, tol=0.001):
 ############################## Get Jungfraujoch Data ##########################
 
 
-def nmdb_get(startdate, enddate, station="JUNG"):
+def nmdb_get(startdate, enddate, station="JUNG", nld=nld):
     """nmdb_get will collect data for Junfraujoch station that is required to calculate fsol.
     Returns a dictionary that can be used to fill in values to the main dataframe
     of each site.
@@ -318,12 +348,16 @@ def nmdb_get(startdate, enddate, station="JUNG"):
         end date of desired data in format YYY-mm-dd
     station : str, optional
         if using different station provide the value here (NMDB.eu shows alternatives), by default "JUNG"
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
 
     Returns
     -------
     dict
         dictionary of neutron count data from NMDB.eu
     """
+    nld = nld['config']
     # split for use in url
     sy, sm, sd = str(startdate).split("-")
     ey, em, ed = str(enddate).split("-")
@@ -357,7 +391,7 @@ def nmdb_get(startdate, enddate, station="JUNG"):
     return dfdict
 
 
-def nmdb_get_alt(startdate, enddate):
+def nmdb_get_alt(startdate, enddate, nld=nld):
     """nmdb_get_alt alternative to the above nmdb_get which will use a recorded file saved in the folder
     This is brought in to deal with when nmdb may be down
 
@@ -368,13 +402,16 @@ def nmdb_get_alt(startdate, enddate):
             e.g 2015-10-01
     enddate : datetime
         end date of desired data in format YYY-mm-dd
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
 
     Returns
     -------
     dict
         dictionary of neutron count data from NMDB.eu
     """
-
+    nld=nld['config']
     df = open(nld['defaultdir']+"/data/nmdb/tmp.txt", "r")
     lines = df.readlines()
     df.close()
@@ -403,7 +440,7 @@ Uses the ERA5_Land data for each site to give a KG class.
 """
 
 
-def KG_func(meta, country, sitenum):
+def KG_func(meta, country, sitenum, nld=nld):
     """KG_func - Takes in the metadata along with a country/sitenum. Will then check to see if local data is available. If it is, it will calculate Koppen-Geigger climate classes using local data as well as Mean Annual Precipitation(MAP) and Mean Annual Temperature(MAT).
 
     Based off the rules in Peel et al., (2007) https://hess.copernicus.org/articles/11/1633/2007/hess-11-1633-2007.pdf
@@ -416,15 +453,17 @@ def KG_func(meta, country, sitenum):
         Country string e.g. "USA"
     sitenum : string
         Site Number string e.g. "011"
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
 
     Returns
     -------
     meta : dataframe
         Returns the metadata dataframe with KG, MAP and MAT values inputted for the site.
     """
-
+    nld=nld['config']
     sitecode = country+"_SITE_"+sitenum
-
     # CHECK IF LOCAL TEMP AND PRECIP IS AVAILABLE
     dfcheck = nld['defaultdir']+"/data/crns_data/raw/"+str(sitecode)+".txt"
     try:
@@ -458,7 +497,7 @@ def KG_func(meta, country, sitenum):
             df.DT.iloc[0], df.DT.iloc[-1], freq='1H', closed='left')
         df = df.reindex(idx, fill_value=nld['noval'])
         df['DT'] = df.index
-        df = df.replace(nld['noval'], np.nan)
+        df = df.replace(int(nld['noval']), np.nan)
 
     else:
 
@@ -649,7 +688,7 @@ def KG_func(meta, country, sitenum):
 ###################### Fill in metadata ######################################
 
 
-def fill_metadata(meta, calc_beta=True, land_cover=True, agb=True):
+def fill_metadata(meta, calc_beta=True, land_cover=True, agb=True, nld=nld):
     """fill_metadata reads in meta_data table, uses the latitude and longitude of each site to find
     metadata from the ISRIC soil database, as well as calculating reference pressure
     and beta coefficient.
@@ -664,12 +703,16 @@ def fill_metadata(meta, calc_beta=True, land_cover=True, agb=True):
         whether to extract the lang cover data for the sites, by default True
     agb : bool, optional
         whether to extract the above ground biomass data for the sites, by default True
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
 
     Returns
     -------
     dataframe
         returns the metadata dataframes with the values added
     """
+    nld=nld['config']
 
     meta['SITENUM'] = meta.SITENUM.map("{:03}".format)  # Ensure leading zeros
 
@@ -804,7 +847,7 @@ def fill_metadata(meta, calc_beta=True, land_cover=True, agb=True):
                         "Could not convert bulk density to soil moisture max. Check your units please.")
             else:
                 bd = meta.at[i, 'BD_ISRIC']
-                meta.at[i, 'SM_MAX'] = (1-(bd/(nld['density'])))
+                meta.at[i, 'SM_MAX'] = (1-(bd/(int(nld['density']))))
 
             # ADD KG climate
             kg, meanprecip, meantemp = KG_func(meta, country, sitenum)

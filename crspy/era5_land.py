@@ -15,12 +15,18 @@ import pandas as pd
 import itertools
 import xarray as xr
 import cdsapi
-from name_list import nld
-import os
-os.chdir(nld['defaultdir'])
+
+"""
+To stop import issue with the config file when importing crspy in a wd without a config.ini file in it we need
+to read in the config file below and add `nld=nld['config']` into each function that requires the nld variables.
+"""
+from configparser import RawConfigParser
+nld = RawConfigParser()
+nld.read('config.ini')
 
 
-def era5landdl(area, years, months, variables, savename):
+
+def era5landdl(area, years, months, variables, savename, nld=nld):
     """era5landdl automate download of ERA5_Land data. See readme for instructions
     on preparing the computer log in to era5 land system necessary to run this code (www.github.com/danpower101/crspy)
 
@@ -45,7 +51,11 @@ def era5landdl(area, years, months, variables, savename):
     savename : string
          string appended to file name when saving
          e.g. "USA_SITES_"
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
     """
+    nld=nld['config']
 
     for year in years:
         for month in months:
@@ -88,7 +98,7 @@ def era5landdl(area, years, months, variables, savename):
                 slocation)
 
 
-def era5landnetcdf(years, months, tol, loadname, savename, ogfile=None):
+def era5landnetcdf(years, months, tol, loadname, savename, ogfile=None, nld=nld):
     """era5landnetcdf takes individual era5land files downloaded from the era5 cds and extracts the required grids.
     It then combines them into a single netcdf file with dimensions date and site.
 
@@ -115,7 +125,12 @@ def era5landnetcdf(years, months, tol, loadname, savename, ogfile=None):
     ogfile : string, optional
         location of the original netcdf file that you wish to append data to (if available)
         e.g. nld['defaultdir'] + "/data/era5land/store/ogfile.nc", by default None
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
     """
+    nld=nld['config']
+    
     if savename == ogfile:
         print("Sorry, savename and ogfile cannot be the same. Please use a temporary name for the new save and change it after the process has completed.")
         return

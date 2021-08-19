@@ -26,9 +26,6 @@ Citations:
     cosmic ray probes, Water Resour. Res., 51, 2030–2046, doi:10.1002/ 2014WR016443.
     
 """
-
-from name_list import nld
-import os
 import math
 import pandas as pd  # Pandas for dataframe
 import numpy as np
@@ -43,11 +40,16 @@ from crspy.neutron_correction_funcs import (
     agb,
 )
 from crspy.additional_metadata import nmdb_get
+"""
+To stop import issue with the config file when importing crspy in a wd without a config.ini file in it we need
+to read in the config file below and add `nld=nld['config']` into each function that requires the nld variables.
+"""
+from configparser import RawConfigParser
+nld = RawConfigParser()
+nld.read('config.ini')
 
-os.chdir(nld['defaultdir'])  # set wd
 
-
-def neutcoeffs(df, country, sitenum, nmdbstation=None):
+def neutcoeffs(df, country, sitenum, nmdbstation=None, nld=nld):
     """neutcoeffs provides the factors to multiply the neutron count by to account for external impacts
 
     Parameters
@@ -60,20 +62,24 @@ def neutcoeffs(df, country, sitenum, nmdbstation=None):
         sitenume e.g. "011"
     nmdbstation : str, optional
         if not JUNG then here goes the nmdb station code, by default None
+    nld : dictionary
+        nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
+        This will store variables such as the wd and other global vars
+
 
     Returns
     -------
     dataframe
         returns the dataframe with values for neutron correction appended
     """
-
+    nld=nld['config']
     print("~~~~~~~~~~~~~ Calculate Neutron Correction Factors ~~~~~~~~~~~~~")
     # Read in meta fresh
     meta = pd.read_csv(nld['defaultdir']+"/data/metadata.csv")
     meta['SITENUM'] = meta.SITENUM.map(
         "{:03}".format)  # Ensure its three digits
 
-    df = df.replace(nld['noval'], np.nan)
+    df = df.replace(int(nld['noval']), np.nan)
 
     ###############################################################################
     #                    Atmospheric Water Vapour                                 #
@@ -90,7 +96,7 @@ def neutcoeffs(df, country, sitenum, nmdbstation=None):
     # VP is in Pascals and TEMP is in Cel
     df['pv'] = df.apply(lambda row: pv(row['VP'], row['TEMP']), axis=1)
     df['pv'] = df['pv']*1000  # convert Kg m-3 to g m-3
-    df["fawv"] = df.apply(lambda row: humfact(row['pv'], nld['pv0']), axis=1)
+    df["fawv"] = df.apply(lambda row: humfact(row['pv'], float(nld['pv0'])), axis=1)
 
     ###############################################################################
     #                            Pressure                                         #
@@ -128,7 +134,7 @@ def neutcoeffs(df, country, sitenum, nmdbstation=None):
             meta.COUNTRY == country), "GV"].item()
         RcCorrval = RcCorr(Rc)
         df['finten_noGV'] = df.apply(lambda row: finten(
-            nld['jung_ref'], row['NMDB_COUNT']), axis=1)
+            int(nld['jung_ref']), row['NMDB_COUNT']), axis=1)
 
         df['finten'] = (df['finten_noGV'] - 1) * RcCorrval + 1
 
@@ -168,7 +174,7 @@ def neutcoeffs(df, country, sitenum, nmdbstation=None):
     df.loc[df['finten'].isnull(), :] = np.nan
     df = df.set_index(DTstore)
     df['DT'] = df.index
-    df = df.replace(np.nan, nld['noval'])
+    df = df.replace(np.nan, int(nld['noval']))
     df = df.round(3)  # decimal place limit
 
     # Save Lvl1 data
