@@ -3,7 +3,7 @@ from configparser import RawConfigParser
 config_object = RawConfigParser()
 config_object['config'] = {
     ";Change defaultdir to your working directory":"",
-    "defaultdir" : "/path/to/wd/here",
+    "defaultdir" : "/home/crspyuser/wd",
     "noval" : "-999",
     "era5_filename":"era5land_all",
     "jung_ref":"159",
