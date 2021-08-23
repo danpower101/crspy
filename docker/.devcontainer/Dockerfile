@@ -11,7 +11,7 @@ RUN pip install --upgrade pip setuptools wheel # buildkit
 RUN pip install Cython h5py 
 RUN apt-get install libnetcdf-c++4-dev -y 
 RUN pip3 install jupyter
-RUN pip3 install -i https://test.pypi.org/pypi/ --extra-index-url https://pypi.org/simple crspy==1.2.2
+RUN pip install crspy
 
 RUN adduser -u 5678 --disabled-password --gecos "" crspyuser && chown -R crspyuser /home/crspyuser
 # COPY .devcontainer.json .
