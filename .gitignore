@@ -5,3 +5,4 @@ crspy/additional_metadata_hawdon.py
 crspy/neutron_coeff_creation_nointen_noagb.py
 crspy/theta_nointen_noagb.py
 data/meta_data.csv
+.DS_Store

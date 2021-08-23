@@ -22,10 +22,10 @@ setup(
     description='Toolbox for calibration and correction of Cosmic Ray Neutron Sensor data using globally available data sources',  # Optional
     long_description=long_description,  # Optional
     long_description_content_type='text/markdown',  # Optional (see note above)
-    url='www.thedanpower.com',  # Optional
+    # url='',  # Optional
     author='Daniel Power',  # Optional
     author_email='daniel.power@bristol.ac.uk',  # Optional
-    packages=find_packages(exclude=['example', 'data']),  # Required
+    packages=find_packages(exclude=['example', 'data', 'docker']),  # Required
    # python_requires='==3.8',
     install_requires=[
         "numpy==1.21.2",
