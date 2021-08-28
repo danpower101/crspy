@@ -60,9 +60,9 @@ def flag_and_remove(df, N0, country, sitenum, nld=nld):
     df2 = df.copy()
     df2['FLAG'] = 0  # initialise FLAG to 0
 
-    # Flag consistent with COSMOS-USA system
-    df2.loc[df2.MOD_CORR > N0, "FLAG"] = 3
-    df = df.drop(df[df.MOD_CORR > N0].index)   # drop above N0
+    # Flag to remove above N0*1.075
+    df2.loc[df2.MOD_CORR > (N0 * 1.075), "FLAG"] = 3
+    df = df.drop(df[df.MOD_CORR > (N0 * 1.075)].index)   # drop above N0
 
     df2.loc[(df2.MOD_CORR < (N0*(int(nld['belowN0'])/100))) &
             (df2.MOD_CORR != int(nld['noval'])), "FLAG"] = 2

@@ -56,7 +56,6 @@ def theta_calc(a0, a1, a2, bd, N, N0, lw, wsom):
     """
     return (((a0)/((N/N0)-a1))-(a2)-lw-wsom)*bd
 
-
 def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, nld=nld):
     """thetaprocess takes the dataframe provided by previous steps and uses the theta calculations
     to give an estimate of soil moisture. 
@@ -162,7 +161,6 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, nld=nld):
     df.loc[df['SM_MINUS_ERR'] < sm_min, 'SM_MINUS_ERR'] = 0
     df.loc[df['SM_MINUS_ERR'] > sm_max, 'SM_MINUS_ERR'] = sm_max
     print("Done")
-
 
     #df['SM_ERROR'] = (df['SM_PLUS_ERR'] - df['SM_MINUS_ERR'])/2
     

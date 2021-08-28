@@ -141,5 +141,5 @@ def colourts(country, sitenum, yearlysm, nld=nld):
                 ax.fill_between(dtime, lower_bound, sm, where=sm > gradrange[i], facecolor=colrange2[i],
                                 alpha=0.2)
             fig.savefig(nld['defaultdir']+"/data/figures/"+uniquefolder+"/SM_year_"+str(year)+".png", dpi=250)
-            
+            plt.close()
            
