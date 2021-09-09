@@ -236,7 +236,7 @@ def era5landnetcdf(years, months, tol, loadname, savename, loadloc=None, saveloc
                         print("Writing "+sitename)
                     except:
                         pass
-                era5_all = xr.merge([era5_all, ds_1], compat="override")
+                era5_all = xr.merge([era5_all, ds_1], join="outer")
                 # Save each iteration incase of crash!
                 era5_all.to_netcdf(nld['defaultdir'] +
                                    "/data/era5land/"+savename+'.nc')

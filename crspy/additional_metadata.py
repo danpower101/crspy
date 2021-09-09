@@ -440,7 +440,7 @@ Uses the ERA5_Land data for each site to give a KG class.
 """
 
 
-def KG_func(meta, country, sitenum, nld=nld):
+def KG_func(meta, country, sitenum, useera=None, nld=nld):
     """KG_func - Takes in the metadata along with a country/sitenum. Will then check to see if local data is available. If it is, it will calculate Koppen-Geigger climate classes using local data as well as Mean Annual Precipitation(MAP) and Mean Annual Temperature(MAT).
 
     Based off the rules in Peel et al., (2007) https://hess.copernicus.org/articles/11/1633/2007/hess-11-1633-2007.pdf
@@ -453,6 +453,8 @@ def KG_func(meta, country, sitenum, nld=nld):
         Country string e.g. "USA"
     sitenum : string
         Site Number string e.g. "011"
+    useera : bool
+        if set to true it will use era5 land data only for calcualting KG etc
     nld : dictionary
         nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
         This will store variables such as the wd and other global vars
@@ -474,55 +476,80 @@ def KG_func(meta, country, sitenum, nld=nld):
         dfcheck = pd.DataFrame()
         dfcheck['E_TEM'] = 1
 
-    # Arbitary amount to check if there are values attached in E_TEM
-    if len(dfcheck['E_TEM'].unique()) > 5:
 
-        df = pd.DataFrame()
-        df['DT'] = pd.to_datetime(dfcheck['TIME'])
-        df['TEMP'] = dfcheck['E_TEM']
-        df['PRCP'] = dfcheck['RAIN']  # !!! Change to 'PRECIP'
-        df['YEAR'] = df['DT'].dt.year
-        df['MONTH'] = df['DT'].dt.month
-        df['HOUR'] = df['DT'].dt.hour
+    # Added check if wanted to use era5 land by default
 
-        # Need to do mastertime process as data is raw
-        df['DT'] = df.DT.dt.floor(freq='H')
-        dtcol = df['DT']
-        df.drop(labels=['DT'], axis=1, inplace=True)  # Move DT to first col
-        df.insert(0, 'DT', dtcol)
-        df = df.set_index(df.DT)
-        df['dupes'] = df.duplicated(subset="DT")
-        df = df.drop(df[df.dupes == True].index)
-        idx = pd.date_range(
-            df.DT.iloc[0], df.DT.iloc[-1], freq='1H', closed='left')
-        df = df.reindex(idx, fill_value=nld['noval'])
-        df['DT'] = df.index
-        df = df.replace(int(nld['noval']), np.nan)
+    if useera == True:
+            era5 = xr.open_dataset(
+                nld['defaultdir']+"data/era5land/"+nld['era5_filename']+".nc")
+            try:
+                era5site = era5.sel(site=str(sitecode))
+            except:
+                if len(era5.site) > 1:
+                    print("No ERA5-Land data available for "+str(sitecode))
+                    return
+                else:
+                    era5site = era5  # If user only has one site it breaks here - this stops that
 
+            df = pd.DataFrame()
+            df['DT'] = pd.to_datetime(era5site.time.values)
+            df['TEMP'] = era5site.temperature.values-273.15
+            df['PRCP'] = era5site.precipitation.values*1000
+            df['YEAR'] = df['DT'].dt.year
+            df['MONTH'] = df['DT'].dt.month
+            df['HOUR'] = df['DT'].dt.hour
+            # Remove values not at midnight to account for era5 accumulation
+            df.loc[df['HOUR'] != 0, 'PRCP'] = 0
     else:
+        # Arbitary amount to check if there are values attached in E_TEM
+        if len(dfcheck['E_TEM'].unique()) > 5:
 
-        era5 = xr.open_dataset(
-            nld['defaultdir']+"data/era5land/"+nld['era5_filename']+".nc")
-        try:
-            era5site = era5.sel(site=sitecode)
-        except:
-            if len(era5.site) > 1:
-                print("No ERA5-Land data available for "+str(sitecode))
-                return
-            else:
-                era5site = era5  # If user only has one site it breaks here - this stops that
+            df = pd.DataFrame()
+            df['DT'] = pd.to_datetime(dfcheck['TIME'])
+            df['TEMP'] = dfcheck['E_TEM']
+            df['PRCP'] = dfcheck['RAIN']  # !!! Change to 'PRECIP'
+            df['YEAR'] = df['DT'].dt.year
+            df['MONTH'] = df['DT'].dt.month
+            df['HOUR'] = df['DT'].dt.hour
 
-        df = pd.DataFrame()
-        df['DT'] = pd.to_datetime(era5site.time.values)
-        df['TEMP'] = era5site.temperature.values-273.15
-        df['PRCP'] = era5site.precipitation.values*1000
-        df['YEAR'] = df['DT'].dt.year
-        df['MONTH'] = df['DT'].dt.month
-        df['HOUR'] = df['DT'].dt.hour
-        # Remove values not at midnight to account for era5 accumulation
-        df.loc[df['HOUR'] != 0, 'PRCP'] = 0
+            # Need to do mastertime process as data is raw
+            df['DT'] = df.DT.dt.floor(freq='H')
+            dtcol = df['DT']
+            df.drop(labels=['DT'], axis=1, inplace=True)  # Move DT to first col
+            df.insert(0, 'DT', dtcol)
+            df = df.set_index(df.DT)
+            df['dupes'] = df.duplicated(subset="DT")
+            df = df.drop(df[df.dupes == True].index)
+            idx = pd.date_range(
+                df.DT.iloc[0], df.DT.iloc[-1], freq='1H', closed='left')
+            df = df.reindex(idx, fill_value=int(nld['noval']))
+            df['DT'] = df.index
+            df = df.replace(int(nld['noval']), np.nan)
+
+        else:
+            era5 = xr.open_dataset(
+                nld['defaultdir']+"data/era5land/"+nld['era5_filename']+".nc")
+            try:
+                era5site = era5.sel(site=str(sitecode))
+            except:
+                if len(era5.site) > 1:
+                    print("No ERA5-Land data available for "+str(sitecode))
+                    return
+                else:
+                    era5site = era5  # If user only has one site it breaks here - this stops that
+
+            df = pd.DataFrame()
+            df['DT'] = pd.to_datetime(era5site.time.values)
+            df['TEMP'] = era5site.temperature.values-273.15
+            df['PRCP'] = era5site.precipitation.values*1000
+            df['YEAR'] = df['DT'].dt.year
+            df['MONTH'] = df['DT'].dt.month
+            df['HOUR'] = df['DT'].dt.hour
+            # Remove values not at midnight to account for era5 accumulation
+            df.loc[df['HOUR'] != 0, 'PRCP'] = 0
 
     uniqueyears = df['YEAR'].unique()
+    print("Using the following years to compute KG/MaP/MaT "+str(uniqueyears))
     uniqueyears = uniqueyears[~np.isnan(uniqueyears)]  # remove nans
     dfdicts = dict()
 
@@ -688,7 +715,7 @@ def KG_func(meta, country, sitenum, nld=nld):
 ###################### Fill in metadata ######################################
 
 
-def fill_metadata(meta, calc_beta=True, land_cover=True, agb=True, nld=nld):
+def fill_metadata(meta, calc_beta=True, land_cover=True, agb=True, useera=None, nld=nld):
     """fill_metadata reads in meta_data table, uses the latitude and longitude of each site to find
     metadata from the ISRIC soil database, as well as calculating reference pressure
     and beta coefficient.
@@ -703,6 +730,8 @@ def fill_metadata(meta, calc_beta=True, land_cover=True, agb=True, nld=nld):
         whether to extract the lang cover data for the sites, by default True
     agb : bool, optional
         whether to extract the above ground biomass data for the sites, by default True
+    useera : bool, optional
+        decide if you want to force the climate metadata to be generated from era5 land data
     nld : dictionary
         nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
         This will store variables such as the wd and other global vars
@@ -841,20 +870,25 @@ def fill_metadata(meta, calc_beta=True, land_cover=True, agb=True, nld=nld):
             if meta['BD'][i] != None:
                 try:
                     bd = meta.at[i, 'BD']
-                    meta.at[i, 'SM_MAX'] = (1-(bd/(nld['density'])))
+                    meta.at[i, 'SM_MAX'] = (1-(bd/(float(nld['density']))))
                 except:
                     print(
                         "Could not convert bulk density to soil moisture max. Check your units please.")
             else:
                 bd = meta.at[i, 'BD_ISRIC']
-                meta.at[i, 'SM_MAX'] = (1-(bd/(int(nld['density']))))
+                meta.at[i, 'SM_MAX'] = (1-(bd/(float((nld['density'])))))
 
             # ADD KG climate
-            kg, meanprecip, meantemp = KG_func(meta, country, sitenum)
+            if useera == True:
+                
+                kg, meanprecip, meantemp = KG_func(meta, country, sitenum, useera=True)
+            else:
+                kg, meanprecip, meantemp = KG_func(meta, country, sitenum)
             meta.at[i, 'KG_CLIMATE'] = kg
             meta.at[i, 'MEAN_ANNUAL_PRECIP'] = meanprecip
             meta.at[i, 'MEAN_ANNUAL_TEMP'] = meantemp
         except:
+            print("Fail")
             pass
 
     if calc_beta == True:
