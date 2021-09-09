@@ -26,7 +26,7 @@ nld.read('config.ini')
 
 
 
-def era5landdl(area, years, months, variables, savename, nld=nld, customloc=None):
+def era5landdl(area, years, months, variables, savename, nld=nld, saveloc=None):
     """era5landdl automate download of ERA5_Land data. See readme for instructions
     on preparing the computer log in to era5 land system necessary to run this code (www.github.com/danpower101/crspy)
 
@@ -54,7 +54,7 @@ def era5landdl(area, years, months, variables, savename, nld=nld, customloc=None
     nld : dictionary
         nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
         This will store variables such as the wd and other global vars
-    customloc : None | string
+    saveloc : None | string
         customloc is by default None and will save into the working directory structure as standard. If you wish to save
         your files in a custom location this can be replace with a string of the directory location.
     """
@@ -62,11 +62,11 @@ def era5landdl(area, years, months, variables, savename, nld=nld, customloc=None
 
     for year in years:
         for month in months:
-            if customloc == None:
+            if saveloc == None:
                 slocation = nld['defaultdir']+"/data/era5land/store/" + \
                     savename+"_"+str(year)+"_month"+str(month)+".nc"
             else:
-                slocation = customloc+savename+"_"+str(year)+"_month"+str(month)+".nc"
+                slocation = saveloc+savename+"_"+str(year)+"_month"+str(month)+".nc"
             c = cdsapi.Client()
             c.retrieve(
                 'reanalysis-era5-land',
@@ -104,7 +104,7 @@ def era5landdl(area, years, months, variables, savename, nld=nld, customloc=None
                 slocation)
 
 
-def era5landnetcdf(years, months, tol, loadname, savename, ogfile=None, nld=nld):
+def era5landnetcdf(years, months, tol, loadname, savename, loadloc=None, saveloc=None, ogfile=None, nld=nld):
     """era5landnetcdf takes individual era5land files downloaded from the era5 cds and extracts the required grids.
     It then combines them into a single netcdf file with dimensions date and site.
 
@@ -128,6 +128,13 @@ def era5landnetcdf(years, months, tol, loadname, savename, ogfile=None, nld=nld)
     savename : string
         name for the output netcdf file
         e.g. "COSMOS_ERA5_data"
+    loadloc : None | string
+        a string path to the folder containing the downloaded ERA5-Land files. Can be used if none default
+        path is used.
+        e.g. "D:/External/Data/Era5/"
+    saveloc : None | string
+        customloc is by default None and will save into the working directory structure as standard. If you wish to save
+        your files in a custom location this can be replace with a string of the directory location.
     ogfile : string, optional
         location of the original netcdf file that you wish to append data to (if available)
         e.g. nld['defaultdir'] + "/data/era5land/store/ogfile.nc", by default None
@@ -154,8 +161,11 @@ def era5landnetcdf(years, months, tol, loadname, savename, ogfile=None, nld=nld)
     # take from metadata
     for year in years:
         for month in months:
-            ncfile = nld['defaultdir']+"/data/era5land/store/" + \
-                loadname+"_"+str(year)+"_month"+str(month)+".nc"
+            if loadloc == None:
+                ncfile = nld['defaultdir']+"/data/era5land/store/" + \
+                    loadname+"_"+str(year)+"_month"+str(month)+".nc"
+            else:
+                ncfile = loadloc+loadname+"_"+str(year)+"_month"+str(month)+".nc"
             print("Extracting data from "+ncfile)
             with xr.open_dataset(ncfile) as ds:
                 timearray = list(ds.time.values)  # Extract the times
@@ -226,7 +236,7 @@ def era5landnetcdf(years, months, tol, loadname, savename, ogfile=None, nld=nld)
                         print("Writing "+sitename)
                     except:
                         pass
-                era5_all = xr.merge([era5_all, ds_1])
+                era5_all = xr.merge([era5_all, ds_1], compat="override")
                 # Save each iteration incase of crash!
                 era5_all.to_netcdf(nld['defaultdir'] +
                                    "/data/era5land/"+savename+'.nc')
