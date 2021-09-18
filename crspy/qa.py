@@ -141,7 +141,7 @@ def flag_and_remove(df, N0, country, sitenum, nld=nld):
 
     df = df.replace(np.nan, int(nld['noval']))
 
-    df.to_csv(nld['defaultdir'] + "/data/crns_data/FINAL/"+country+"_SITE_" + sitenum+"_final.txt",
+    df.to_csv(nld['defaultdir'] + "/data/crns_data/final/"+country+"_SITE_" + sitenum+"_final.txt",
               header=True, index=False, sep="\t", mode='w')
     print("Done")
     return df
