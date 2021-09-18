@@ -203,7 +203,7 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, nld=nld):
                   'D86_75m', 'D86_150m', 'MOD_CORR_PLUS', 'MOD_CORR_MINUS'], axis=1)  # ,
     #     'MOD_CORR_PLUS', 'MOD_CORR_MINUS', 'SM_PLUS_ERR', 'SM_MINUS_ERR'], axis=1)
 
-    df.to_csv(nld['defaultdir'] + "/data/crns_data/FINAL/"+country+"_SITE_"+sitenum+"_final.txt",
+    df.to_csv(nld['defaultdir'] + "/data/crns_data/final/"+country+"_SITE_"+sitenum+"_final.txt",
               header=True, index=False, sep="\t", mode="w")
 
     # Add the graphical function to output timeseries
