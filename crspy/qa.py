@@ -13,7 +13,7 @@ import os
 from configparser import RawConfigParser
 nld = RawConfigParser()
 nld.read('config.ini')
-
+ite
 ###############################################################################
 #                          The flagging                                       #
 ###############################################################################
@@ -174,7 +174,7 @@ def tseriesplots(var, df, defaultdir, country, sitenum):
     plt.title(var, fontsize=16)
     plt.plot(x, y, marker='o', markersize=0.3,  color='r', linewidth=0.3)
     plt.savefig(defaultdir+"/data/qa/"+country +
-                "_Site_"+sitenum+"/"+var+".png", dpi=250)
+                "_SITE_"+sitenum+"/"+var+".png", dpi=250)
     plt.close()
 
 
@@ -225,7 +225,7 @@ def QA_plotting(df, country, sitenum, defaultdir, nld=nld):
     plt.title("Correlation")
     # Heat Map to check for correlations
     sns.heatmap(dfcomp.corr(), cmap="BuPu")
-    plt.savefig(defaultdir+"/data/qa/"+country+"_Site_" +
+    plt.savefig(defaultdir+"/data/qa/"+country+"_SITE_" +
                 sitenum+"/correlation_heat_map.png")
     plt.close()
 
@@ -244,7 +244,7 @@ def QA_plotting(df, country, sitenum, defaultdir, nld=nld):
     plt.figure("DESC", figsize=(10, 5))
     plt.title("MOD Descriptive Statistics")
     plt.bar(desc['index'], desc['MOD'], color="Green")
-    plt.savefig(defaultdir+"/data/qa/"+country+"_Site_" +
+    plt.savefig(defaultdir+"/data/qa/"+country+"_SITE_" +
                 sitenum+"/MOD_descriptive.png", dpi=200)
     plt.close()
 
