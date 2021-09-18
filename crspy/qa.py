@@ -13,7 +13,7 @@ import os
 from configparser import RawConfigParser
 nld = RawConfigParser()
 nld.read('config.ini')
-ite
+
 ###############################################################################
 #                          The flagging                                       #
 ###############################################################################
