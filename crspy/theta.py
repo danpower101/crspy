@@ -116,6 +116,9 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, nld=nld):
     try:
         sm_max = meta.loc[(meta.COUNTRY == country) & (
             meta.SITENUM == sitenum), 'SM_MAX'].item()
+        if math.isnan(sm_max):
+            print("Couldn't find SM_MAX in metadata. Creating value from bulk density data")
+            sm_max = (1-(bd/(float(nld['density']))))
     except:
         print("Couldn't find SM_MAX in metadata. Creating value from bulk density data")
         sm_max = (1-(bd/(float(nld['density']))))
