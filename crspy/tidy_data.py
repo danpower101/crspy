@@ -116,6 +116,29 @@ def prepare_data(fileloc, intentype=None, nld=nld):
     df = pd.read_csv(nld['defaultdir'] + "/data/crns_data/raw/" +
                      country+"_SITE_" + sitenum+".txt", sep="\t")
 
+    # Introduce a converter for the CosmOz style when using AUS data:
+    if country == "AUS":
+        try:
+            df.rename(columns={
+                "UTC_TIMESTAMP":"TIME",
+                "COUNT":"MOD",
+                "PRESSURE_mb":"PRESS1",
+                "PRESSURE2_mb":"PRESS2",
+                "INTERNAL_TEMPERATURE_oC":"I_TEM",
+                "INTERNAL_RH_%":"I_RH",
+                "BATTERY_V":"BATT",
+                "RAIN_COUNT":"RAIN",
+                "EXTERNAL_TEMPERATURE_oC":"E_TEM",
+                "EXTERNAL_RH_%":"E_RH"
+            }, inplace=True)
+            df['RAIN'] = df['RAIN']* 0.2 # convert rain from count to mm
+            temp_rain = df['RAIN']
+            df.replace(0,-999, inplace=True)
+            df['RAIN'] = temp_rain
+        except:
+            print("Detected AUS data and tried to convert columns from CosmOz format to crspy format and failed. Please check raw data.")
+            return
+
     # Remove leading white space - present in some SD card data
     df['TIME'] = df['TIME'].str.lstrip()
     # Ensure using dashes as Excel tends to convert to /s
@@ -197,6 +220,11 @@ def prepare_data(fileloc, intentype=None, nld=nld):
 
     #!!! TO DO add a check here to see if we need ERA5_Land data in the first place
 
+    # if (df['RAIN'].mean() != int(nld['noval'])) and (df[''])
+
+
+    # else:
+    
     # Read in the time zone of the site
     print("Collecting ERA-5 Land variables...")
     try:
@@ -236,7 +264,7 @@ def prepare_data(fileloc, intentype=None, nld=nld):
         if df.E_TEM.mean() == int(nld['noval']):
             df['TEMP'] = df['DT'].map(temp_dict)
             meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY']
-                                                     == country), 'TEM_DATA_SOURCE'] = 'ERA5_Land'
+                                                    == country), 'TEM_DATA_SOURCE'] = 'ERA5_Land'
         else:
             df['TEMP'] = df['E_TEM']
             meta.loc[(meta['SITENUM'] == sitenum) & (
@@ -245,7 +273,7 @@ def prepare_data(fileloc, intentype=None, nld=nld):
         if df.RAIN.mean() == int(nld['noval']):
             df['RAIN'] = df['DT'].map(prcp_dict)
             meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY']
-                                                     == country), 'RAIN_DATA_SOURCE'] = 'ERA5_Land'
+                                                    == country), 'RAIN_DATA_SOURCE'] = 'ERA5_Land'
         else:
             meta.loc[(meta['SITENUM'] == sitenum) & (
                 meta['COUNTRY'] == country), 'RAIN_DATA_SOURCE'] = 'Local'
@@ -315,6 +343,7 @@ def prepare_data(fileloc, intentype=None, nld=nld):
         print("Getting Jungfraujoch counts...")
 
         try:
+            print("NMDB data from: "+str(startdate)+" to "+str(enddate))
             nmdbdict = nmdb_get(startdate, enddate)
             df['NMDB_COUNT'] = int(nld['noval']) # make sure its empty
             df['NMDB_COUNT'] = df['DT'].map(nmdbdict)

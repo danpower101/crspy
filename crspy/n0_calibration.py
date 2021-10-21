@@ -667,8 +667,15 @@ def n0_calib(meta, country, sitenum, defineaccuracy, nld=nld):
     tmp = tmp.replace(int(nld['noval']), np.nan)
     #n_max = tmp['MOD_CORR'].max()
     n_avg = int(np.nanmean(tmp['MOD_CORR']))
-
-    print("Avg N is for the site is  "+str(n_avg))
+    if n_avg >= 4000:
+        print("Avg N is for the site is  "+str(n_avg)+" due to presumed errors in raw data. It has been capped at 3,000")
+        n_avg = 3000
+        """
+        TODO need to reconsider this for broader issue. What value for n_avg when averages are way off.
+        For now hard code 3000, but this will vary depending on sensor/location. Perhaps some kind of mode?
+        """
+    else:
+        print("Avg N is for the site is  "+str(n_avg))
     tmp['DATE'] = pd.to_datetime(tmp['DT'], format="%Y-%m-%d %H:%M:%S")
     tmp['DATE'] = tmp['DATE'].dt.date  # Remove the time portion to match above
 
