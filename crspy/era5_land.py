@@ -153,7 +153,7 @@ def era5landnetcdf(years, months, tol, loadname, savename, loadloc=None, saveloc
 
     # Create placeholder
     ds_1 = xr.Dataset()
-    if ogfile == "None":
+    if ogfile == None:
         era5_all = xr.Dataset()
     else:
         era5_all = xr.open_dataset(ogfile)
