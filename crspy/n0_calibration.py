@@ -259,17 +259,21 @@ def n0_calib(meta, country, sitenum, defineaccuracy, nld=nld):
     # Here using average of BD given in calibration data
     bd = meta.loc[(meta.COUNTRY == country) & (
         meta.SITENUM == sitenum), 'BD'].item()
+    bd = float(bd) # Convert str to float
     bdunavailable = False
     if math.isnan(bd):
         bd = meta.loc[(meta.COUNTRY == country) & (
             meta.SITENUM == sitenum), 'BD_ISRIC'].item()  # Use ISRIC data if unavailable
+        bd = float(bd)
         bdunavailable = True
     sitename = meta.loc[(meta.COUNTRY == country) & (
         meta.SITENUM == sitenum), 'SITE_NAME'].item()
     soc = meta.loc[(meta.COUNTRY == country) & (
         meta.SITENUM == sitenum), 'SOC'].item()
+    soc = float(soc)
     lw = meta.loc[(meta.COUNTRY == country) & (
         meta.SITENUM == sitenum), 'LW'].item()
+    lw = float(lw)
     Hveg = 0  # Hveg not used due to lack of reliable data and small impact.
 
     """

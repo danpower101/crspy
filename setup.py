@@ -37,6 +37,7 @@ setup(
         "scipy==1.7.1",
         "netCDF4==1.5.7",
         "beautifulsoup4==4.9.3",
-        "ipykernel==6.2.0"
+        "ipykernel",
+        "ipython"
     ],
 )

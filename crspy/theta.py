@@ -96,26 +96,33 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, nld=nld):
     print("Read in constants...")
     lw = meta.loc[(meta.COUNTRY == country) & (
         meta.SITENUM == sitenum), 'LW'].item()
+    lw = float(lw)
     soc = meta.loc[(meta.COUNTRY == country) & (
         meta.SITENUM == sitenum), 'SOC'].item()
+    soc = float(soc)
     try:
         bd = meta.loc[(meta.COUNTRY == country) & (
             meta.SITENUM == sitenum), 'BD'].item()
+        bd = float(bd)
         if math.isnan(bd):
             print("BD is nan value, using ISRIC data instead.")
             bd = meta.loc[(meta.COUNTRY == country) & (
-            meta.SITENUM == sitenum), 'BD_ISRIC'].item()
+                meta.SITENUM == sitenum), 'BD_ISRIC'].item()
+            bd = float(bd)
     except:
         print("Couldn't find local bulk density data, using ISRIC data instead.")
         bd = meta.loc[(meta.COUNTRY == country) & (
             meta.SITENUM == sitenum), 'BD_ISRIC'].item()
+        bd = float(bd)
     print("BD is "+str(bd))
     N0 = meta.loc[(meta.COUNTRY == country) & (
         meta.SITENUM == sitenum), 'N0'].item()
+    N0 = int(N0)
 
     try:
         sm_max = meta.loc[(meta.COUNTRY == country) & (
             meta.SITENUM == sitenum), 'SM_MAX'].item()
+        sm_max = float(sm_max)
         if math.isnan(sm_max):
             print("Couldn't find SM_MAX in metadata. Creating value from bulk density data")
             sm_max = (1-(bd/(float(nld['density']))))
