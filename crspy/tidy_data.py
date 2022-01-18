@@ -116,28 +116,28 @@ def prepare_data(fileloc, intentype=None, nld=nld):
     df = pd.read_csv(nld['defaultdir'] + "/data/crns_data/raw/" +
                      country+"_SITE_" + sitenum+".txt", sep="\t")
 
-    # Introduce a converter for the CosmOz style when using AUS data:
-    if country == "AUS":
-        try:
-            df.rename(columns={
-                "UTC_TIMESTAMP":"TIME",
-                "COUNT":"MOD",
-                "PRESSURE_mb":"PRESS1",
-                "PRESSURE2_mb":"PRESS2",
-                "INTERNAL_TEMPERATURE_oC":"I_TEM",
-                "INTERNAL_RH_%":"I_RH",
-                "BATTERY_V":"BATT",
-                "RAIN_COUNT":"RAIN",
-                "EXTERNAL_TEMPERATURE_oC":"E_TEM",
-                "EXTERNAL_RH_%":"E_RH"
-            }, inplace=True)
-            df['RAIN'] = df['RAIN']* 0.2 # convert rain from count to mm
-            temp_rain = df['RAIN']
-            df.replace(0,-999, inplace=True)
-            df['RAIN'] = temp_rain
-        except:
-            print("Detected AUS data and tried to convert columns from CosmOz format to crspy format and failed. Please check raw data.")
-            return
+    # # Introduce a converter for the CosmOz style when using AUS data:
+    # if country == "AUS":
+    #     try:
+    #         df.rename(columns={
+    #             "UTC_TIMESTAMP":"TIME",
+    #             "COUNT":"MOD",
+    #             "PRESSURE_mb":"PRESS1",
+    #             "PRESSURE2_mb":"PRESS2",
+    #             "INTERNAL_TEMPERATURE_oC":"I_TEM",
+    #             "INTERNAL_RH_%":"I_RH",
+    #             "BATTERY_V":"BATT",
+    #             "RAIN_COUNT":"RAIN",
+    #             "EXTERNAL_TEMPERATURE_oC":"E_TEM",
+    #             "EXTERNAL_RH_%":"E_RH"
+    #         }, inplace=True)
+    #         df['RAIN'] = df['RAIN']* 0.2 # convert rain from count to mm
+    #         temp_rain = df['RAIN']
+    #         df.replace(0,-999, inplace=True)
+    #         df['RAIN'] = temp_rain
+    #     except:
+    #         print("Detected AUS data and tried to convert columns from CosmOz format to crspy format and failed. Please check raw data.")
+    #         return
 
     # Remove leading white space - present in some SD card data
     df['TIME'] = df['TIME'].str.lstrip()
