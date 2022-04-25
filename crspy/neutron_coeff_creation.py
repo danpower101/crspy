@@ -96,6 +96,16 @@ def neutcoeffs(df, country, sitenum, nmdbstation=None, nld=nld):
     # VP is in Pascals and TEMP is in Cel
     df['pv'] = df.apply(lambda row: pv(row['VP'], row['TEMP']), axis=1)
     df['pv'] = df['pv']*1000  # convert Kg m-3 to g m-3
+    
+    df['pv_derived_qc'] = 0
+    df.loc[df['pv'] == math.nan, 'pv_derived_qc'] = 1
+    
+    #Try to fill values with flux if missing
+    try:
+        df.pv.fillna(df.E_AH_FLUX,inplace = True)
+    except:
+        pass
+
     df["fawv"] = df.apply(lambda row: humfact(row['pv'], float(nld['pv0'])), axis=1)
 
     ###############################################################################

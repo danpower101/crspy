@@ -13,6 +13,7 @@ import math
 # crspy funcs
 from crspy.n0_calibration import (rscaled, D86)
 from crspy.graphical_functions import colourts
+from crspy.gen_funcs import theta_calc, theta_kohli
 """
 To stop import issue with the config file when importing crspy in a wd without a config.ini file in it we need
 to read in the config file below and add `nld=nld['config']` into each function that requires the nld variables.
@@ -26,37 +27,11 @@ nld.read('config.ini')
 ###############################################################################
 """
 
-
 """
+## NOTE: theta_calc has been moved to gen_funcs.py
 
 
-def theta_calc(a0, a1, a2, bd, N, N0, lw, wsom):
-    """theta_calc standard theta calculation
-
-    Parameters
-    ----------
-    a0 : float
-        constant
-    a1 : float
-        constant
-    a2 : float
-        constant
-    bd : float
-        bulk density e.g. 1.4 g/cm3
-    N : int
-        Neutron count (corrected)
-    N0 : int
-        N0 number
-    lw : float
-        lattice water - decimal percent e.g. 0.002
-    wsom : float
-        soil organic carbon - decimal percent e.g, 0.02
-
-
-    """
-    return (((a0)/((N/N0)-a1))-(a2)-lw-wsom)*bd
-
-def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, nld=nld):
+def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, theta_method="desilets", nld=nld):
     """thetaprocess takes the dataframe provided by previous steps and uses the theta calculations
     to give an estimate of soil moisture. 
 
@@ -145,23 +120,40 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, nld=nld):
     # Create MOD count to min and max of error
     df['MOD_CORR_PLUS'] = df['MOD_CORR'] + df['MOD_ERR']
     df['MOD_CORR_MINUS'] = df['MOD_CORR'] - df['MOD_ERR']
-
-    # Calculate soil moisture - including min and max error
-    df['SM'] = df.apply(lambda row: theta_calc(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, row['MOD_CORR'], N0, lw,
-                                               soc), axis=1)
-    df['SM'] = df['SM']
-
-    df['SM_PLUS_ERR'] = df.apply(lambda row: theta_calc(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, row['MOD_CORR_MINUS'], N0, lw,
-                                                        soc), axis=1)  # Find error (inverse relationship so use MOD minus for soil moisture positive Error)
-    df['SM_PLUS_ERR'] = df['SM_PLUS_ERR']
-    df['SM_PLUS_ERR'] = abs(df['SM_PLUS_ERR'] - df['SM'])
-
-    df['SM_MINUS_ERR'] = df.apply(lambda row: theta_calc(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, row['MOD_CORR_PLUS'], N0, lw,
-                                                         soc), axis=1)
-    df['SM_MINUS_ERR'] = df['SM_MINUS_ERR']
-    df['SM_MINUS_ERR'] = abs(df['SM_MINUS_ERR'] - df['SM'])
     
-    # Remove values above or below max and min volsm
+    if theta_method == "desilets":
+        # Calculate soil moisture - including min and max error
+        df['SM'] = df.apply(lambda row: theta_calc(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, row['MOD_CORR'], N0, lw,
+                                                soc), axis=1)
+        df['SM'] = df['SM']
+        df['SM_RAW'] = df['SM']
+
+        df['SM_PLUS_ERR'] = df.apply(lambda row: theta_calc(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, row['MOD_CORR_MINUS'], N0, lw,
+                                                            soc), axis=1)  # Find error (inverse relationship so use MOD minus for soil moisture positive Error)
+        df['SM_PLUS_ERR'] = df['SM_PLUS_ERR']
+        df['SM_PLUS_ERR'] = abs(df['SM_PLUS_ERR'] - df['SM'])
+
+        df['SM_MINUS_ERR'] = df.apply(lambda row: theta_calc(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, row['MOD_CORR_PLUS'], N0, lw,
+                                                            soc), axis=1)
+        df['SM_MINUS_ERR'] = df['SM_MINUS_ERR']
+        df['SM_MINUS_ERR'] = abs(df['SM_MINUS_ERR'] - df['SM'])
+    elif theta_method == "kohli":
+        df['SM'] = df.apply(lambda row: theta_kohli(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, row['MOD_CORR'], N0, lw,
+                                                soc), axis=1)
+        df['SM'] = df['SM']
+        df['SM_RAW'] = df['SM']
+
+        df['SM_PLUS_ERR'] = df.apply(lambda row: theta_kohli(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, row['MOD_CORR_MINUS'], N0, lw,
+                                                            soc), axis=1)  # Find error (inverse relationship so use MOD minus for soil moisture positive Error)
+        df['SM_PLUS_ERR'] = df['SM_PLUS_ERR']
+        df['SM_PLUS_ERR'] = abs(df['SM_PLUS_ERR'] - df['SM'])
+
+        df['SM_MINUS_ERR'] = df.apply(lambda row: theta_kohli(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, row['MOD_CORR_PLUS'], N0, lw,
+                                                            soc), axis=1)
+        df['SM_MINUS_ERR'] = df['SM_MINUS_ERR']
+        df['SM_MINUS_ERR'] = abs(df['SM_MINUS_ERR'] - df['SM'])        
+    
+    # Remove values above or below max and min vols
     df.loc[df['SM'] < sm_min, 'SM'] = 0
     df.loc[df['SM'] > sm_max, 'SM'] = sm_max
 

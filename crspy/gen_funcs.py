@@ -22,6 +22,66 @@ from configparser import RawConfigParser
 nld = RawConfigParser()
 nld.read('config.ini')
 
+
+def theta_kohli(a0, a1, a2, bd, N, N0, lw, wsom):
+    """theta_calc kohli theta calc
+
+    https://doi.org/10.3389/frwa.2020.544847
+
+    Parameters
+    ----------
+    a0 : float
+        constant
+    a1 : float
+        constant
+    a2 : float
+        constant
+    bd : float
+        bulk density e.g. 1.4 g/cm3
+    N : int
+        Neutron count (corrected)
+    N0 : int
+        N0 number
+    lw : float
+        lattice water - decimal percent e.g. 0.002
+    wsom : float
+        soil organic carbon - decimal percent e.g, 0.02
+
+
+    """
+    Nmax = N0 * ( (a0+(a1*a2)) / (a2) )
+    ah0 = -a2
+    ah1 = (a1*a2)/(a0+(a1*a2))
+    sm = ((ah0 * ( (1-(N/Nmax)) / (ah1 - (N/Nmax)) )) - lw - wsom) * bd
+    return sm
+
+def theta_calc(a0, a1, a2, bd, N, N0, lw, wsom):
+    """theta_calc standard theta calculation
+
+    Parameters
+    ----------
+    a0 : float
+        constant
+    a1 : float
+        constant
+    a2 : float
+        constant
+    bd : float
+        bulk density e.g. 1.4 g/cm3
+    N : int
+        Neutron count (corrected)
+    N0 : int
+        N0 number
+    lw : float
+        lattice water - decimal percent e.g. 0.002
+    wsom : float
+        soil organic carbon - decimal percent e.g, 0.02
+
+
+    """
+    return (((a0)/((N/N0)-a1))-(a2)-lw-wsom)*bd
+
+
 def datechange(year, yday):
     """
     Datechange func takes as arguments year and yday and converts it into a
