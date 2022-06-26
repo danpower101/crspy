@@ -28,7 +28,7 @@ setup(
     packages=find_packages(exclude=['example', 'data', 'docker']),  # Required
    # python_requires='==3.8',
     install_requires=[
-        "numpy==1.21.2",
+        "numpy==1.22.0",
         "pandas==1.3.2",
         "matplotlib==3.4.3",
         "seaborn==0.11.2",
