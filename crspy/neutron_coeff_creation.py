@@ -120,7 +120,7 @@ def neutcoeffs(df, country, sitenum, nmdbstation=None, nld=nld):
     beta = meta.loc[(meta.SITENUM == sitenum) & (
         meta.COUNTRY == country), "BETA_COEFF"].item()
     df['fbar'] = df.apply(lambda row: pressfact_B(
-        row['PRESS'], beta, refpres), axis=1)
+        float(row['PRESS']), float(beta), float(refpres)), axis=1)
 
     ###############################################################################
     #                       Solar Intensity                                       #

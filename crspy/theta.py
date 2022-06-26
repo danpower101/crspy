@@ -13,7 +13,7 @@ import math
 # crspy funcs
 from crspy.n0_calibration import (rscaled, D86)
 from crspy.graphical_functions import colourts
-from crspy.gen_funcs import theta_calc, theta_kohli
+from crspy.gen_funcs import theta_calc, theta_kohli, checkdata
 """
 To stop import issue with the config file when importing crspy in a wd without a config.ini file in it we need
 to read in the config file below and add `nld=nld['config']` into each function that requires the nld variables.
@@ -21,6 +21,7 @@ to read in the config file below and add `nld=nld['config']` into each function 
 from configparser import RawConfigParser
 nld = RawConfigParser()
 nld.read('config.ini')
+
 
 ###############################################################################
 #                       Add the sitenum/country                               #
@@ -31,7 +32,7 @@ nld.read('config.ini')
 ## NOTE: theta_calc has been moved to gen_funcs.py
 
 
-def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, theta_method="desilets", nld=nld):
+def thetaprocess(df, meta, country, sitenum, agg24, yearlysmfig=True, theta_method="desilets", nld=nld):
     """thetaprocess takes the dataframe provided by previous steps and uses the theta calculations
     to give an estimate of soil moisture. 
 
@@ -57,6 +58,9 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, theta_method="des
         country e.g. "USA"
     sitenum : str  
         sitenum e.g. "011"
+    agg24 : bool
+        input from full process wrapper on whether to calc agg24 vals 
+        TODO: consider whether this needs to be done earlier in process
     yearlysmfig : bool, optional
         whether to output yearly figures when creating time series, by default True
     nld : dictionary
@@ -189,14 +193,61 @@ def thetaprocess(df, meta, country, sitenum, yearlysmfig=True, theta_method="des
     df['D86avg'] = (df['D86_10m'] + df['D86_75m'] + df['D86_150m']) / 3
     df['D86avg_12h'] = df['D86avg'].rolling(window=int(nld['smwindow']), min_periods=6).mean()
 
-    # Write a "clean" file that is just corrected soil moisture and depth of measurement
-    # removed "SM_12h_SG" for now
-    smclean = pd.DataFrame(
-        df, columns=["DT", "SM", "D86avg", "SM_12h",  "D86avg_12h"])
-    smclean = smclean.replace(np.nan, int(nld['noval']))
-    smclean = smclean.round(3)
-    smclean.to_csv(nld['defaultdir'] + "/data/crns_data/simple/"+country+"_SITE_" + sitenum+"_simple.txt",
-                   header=True, index=False, sep="\t", mode='w')
+
+    if agg24 == True:
+        #read in data
+        df24 = pd.read_csv(nld['defaultdir']+"/data/crns_data/final/" +
+                     country+"_SITE_"+sitenum+"_final.txt", sep="\t")
+        df24 = df24.replace(int(nld['noval']), np.nan)
+            # Error is the ((standard deviation) / MOD)*MODCORR
+        df24['DT'] = pd.to_datetime(df24['DT'])
+        df24 = df24.set_index(df24['DT'])
+
+        #mean sample rest
+        # Missing obs will affect avg - take avg and multiply by 24 hours.
+        # Create a measure of missing vals
+        df24['MOD_OBS_IN_DAY'] = df24.apply(lambda row: checkdata(row['MOD']),axis=1)
+        df24['RAIN_OBS_IN_DAY'] = df24.apply(lambda row: checkdata(row['RAIN']),axis=1)
+        df24 = df24.resample('D').mean()
+        df24['MOD'] = df24['MOD']*24
+        df24['MOD_CORR'] = df24['MOD_CORR']*24
+        df24['RAIN'] = df24['RAIN']*24
+
+        #calc err
+        df24['MOD_ERR'] = (np.sqrt(df24['MOD'])/df24['MOD']) * df24['MOD_CORR']
+        df24['MOD_ERR'] = df24['MOD_ERR'].apply(np.floor)
+        df24['MOD_CORR_PLUS'] = df24['MOD_CORR'] + df24['MOD_ERR']
+        df24['MOD_CORR_MINUS'] = df24['MOD_CORR'] - df24['MOD_ERR']
+
+        df24['SM'] = df24.apply(lambda row: theta_calc(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, row['MOD_CORR'], N0*24, lw,
+                                                soc), axis=1)
+        df24['SM'] = df24['SM']
+        df24['SM_RAW'] = df24['SM']
+
+        df24['SM_PLUS_ERR'] = df24.apply(lambda row: theta_calc(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, row['MOD_CORR_MINUS'], N0*24, lw,
+                                                            soc), axis=1)  # Find error (inverse relationship so use MOD minus for soil moisture positive Error)
+        df24['SM_PLUS_ERR'] = df24['SM_PLUS_ERR']
+        df24['SM_PLUS_ERR'] = abs(df24['SM_PLUS_ERR'] - df24['SM'])
+
+        df24['SM_MINUS_ERR'] = df24.apply(lambda row: theta_calc(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, row['MOD_CORR_PLUS'], N0*24, lw,
+                                                            soc), axis=1)
+        df24['SM_MINUS_ERR'] = df24['SM_MINUS_ERR']
+        df24['SM_MINUS_ERR'] = abs(df24['SM_MINUS_ERR'] - df24['SM'])
+
+        df24.loc[df24['SM'] < sm_min, 'SM'] = 0
+        df24.loc[df24['SM'] > sm_max, 'SM'] = sm_max
+
+        df24.loc[df24['SM_PLUS_ERR'] < sm_min, 'SM_PLUS_ERR'] = 0
+        df24.loc[df24['SM_PLUS_ERR'] > sm_max, 'SM_PLUS_ERR'] = sm_max
+
+        df24.loc[df24['SM_MINUS_ERR'] < sm_min, 'SM_MINUS_ERR'] = 0
+        df24.loc[df24['SM_MINUS_ERR'] > sm_max, 'SM_MINUS_ERR'] = sm_max
+
+        df24.fillna(int(nld['noval']), inplace=True)
+        df24 = df24.round(3)
+        df24 = df24.reset_index()
+        df24.to_csv(nld['defaultdir'] + "/data/crns_data/final/"+country+"_SITE_"+sitenum+"_final_24agg.txt",
+              header=True, index=False, sep="\t", mode="w") 
 
     # Replace nans with -999
     df.fillna(int(nld['noval']), inplace=True)

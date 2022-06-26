@@ -25,7 +25,7 @@ nld = RawConfigParser()
 nld.read('config.ini')
 
 
-def process_raw_data(filepath, calibrate=True, calib_start_time=None, calib_end_time=None, intentype=None, useera5=True, theta_method="desilets", nld=nld):
+def process_raw_data(filepath, calibrate=True, calib_start_time=None, calib_end_time=None, intentype=None, useera5=True, theta_method="desilets", agg24=False, nld=nld):
     """process_raw_data is a function that wraps all the necessary functions to process data. The user can select
     whether to complete n0 calibration (i.e. this may not be required if already done previously). It also gives the option to decide which
     intensity correction method to apply as there are two currently used. If a standard is agreed upon this will adjusted here.
@@ -51,6 +51,8 @@ def process_raw_data(filepath, calibrate=True, calib_start_time=None, calib_end_
         data, default True.
     theta_method: str, optional
         standard method is desilet, added option to use kohli method (see gen funcs - theta_kohli)
+    agg24: bool, optional
+        default is off, allows a user to request 24 hour aggregated data (for reducing uncertainty)
     nld : dictionary
         nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
         This will store variables such as the wd and other global vars
@@ -88,14 +90,15 @@ def process_raw_data(filepath, calibrate=True, calib_start_time=None, calib_end_
 
     if calibrate is True:
         if calib_start_time and calib_end_time:
-            meta, N0 = n0_calib(meta, country, sitenum, defineaccuracy=float(nld['accuracy']), calib_start_time = calib_start_time, calib_end_time = calib_end_time, theta_method=theta_method)
+            meta, N0 = n0_calib(meta, country, sitenum, defineaccuracy=float(nld['accuracy']), useeradata=useera5, calib_start_time = calib_start_time, calib_end_time = calib_end_time, theta_method=theta_method)
         else:
-            meta, N0 = n0_calib(meta, country, sitenum, defineaccuracy=float(nld['accuracy']), theta_method=theta_method)
+            meta, N0 = n0_calib(meta, country, sitenum, defineaccuracy=float(nld['accuracy']), useeradata=useera5, theta_method=theta_method)
     else:
         N0 = meta.loc[(meta.COUNTRY == country) & (
             meta.SITENUM == sitenum), 'N0'].item()
 
     df = flag_and_remove(df, N0, country, sitenum)
     df = QA_plotting(df, country, sitenum, nld['defaultdir'])
-    df = thetaprocess(df, meta, country, sitenum, theta_method=theta_method)
+    df = thetaprocess(df, meta, country, sitenum, agg24=agg24, theta_method=theta_method)
     return df, meta
+

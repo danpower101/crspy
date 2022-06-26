@@ -259,34 +259,20 @@ def prepare_data(fileloc, useeradata, intentype=None, nld=nld):
 
             prcp_dict = dict(zip(tmp['DT'], tmp['TRUERAIN']))
             # Add the ERA5_Land data
-            if df.E_TEM.mean() == int(nld['noval']):
-                df['TEMP'] = df['DT'].map(temp_dict)
-                meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY']
-                                                        == country), 'TEM_DATA_SOURCE'] = 'ERA5_Land'
-            else:
-                df['TEMP'] = df['E_TEM']
-                meta.loc[(meta['SITENUM'] == sitenum) & (
-                    meta['COUNTRY'] == country), 'TEM_DATA_SOURCE'] = 'Local'
+            df['TEMP'] = df['DT'].map(temp_dict)
+            meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY']
+                                                    == country), 'TEM_DATA_SOURCE'] = 'ERA5_Land'
 
-            if df.RAIN.mean() == int(nld['noval']):
-                df['RAIN'] = df['DT'].map(prcp_dict)
-                meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY']
-                                                        == country), 'RAIN_DATA_SOURCE'] = 'ERA5_Land'
-            else:
-                meta.loc[(meta['SITENUM'] == sitenum) & (
-                    meta['COUNTRY'] == country), 'RAIN_DATA_SOURCE'] = 'Local'
+            df['RAIN'] = df['DT'].map(prcp_dict)
+            meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY']
+                                                    == country), 'RAIN_DATA_SOURCE'] = 'ERA5_Land'
 
-            if df.E_RH.mean() == int(nld['noval']):
-                rh = False
-                meta.loc[(meta['SITENUM'] == sitenum) & (
-                    meta['COUNTRY'] == country), 'RH_DATA_SOURCE'] = 'None'
-            else:
-                meta.loc[(meta['SITENUM'] == sitenum) & (
-                    meta['COUNTRY'] == country), 'RH_DATA_SOURCE'] = 'Local'
-                rh = True
+            rh = False
+            meta.loc[(meta['SITENUM'] == sitenum) & (
+                meta['COUNTRY'] == country), 'RH_DATA_SOURCE'] = 'None'
+
             df['DEWPOINT_TEMP'] = df['DT'].map(dptemp_dict)
             df['SWE'] = df['DT'].map(swe_dict)
-            # df['SWE'] = -999
             df['ERA5L_PRESS'] = df['DT'].map(press_dict)
 
             # PRESS2 is more accurate pressure gauge - use if available and if not fill in with PRESS1
@@ -308,6 +294,7 @@ def prepare_data(fileloc, useeradata, intentype=None, nld=nld):
 
             print("Done")
         except:
+            print("An error occured in ERA5-Land data writing. Attempting to use local data.")
             # Introduced this bit to allow using sites that don't need ERA5_Land
             df['PRESS'] = df['PRESS2']
             df.loc[df['PRESS'] == int(nld['noval']), 'PRESS'] = df['PRESS1']  # !!!added

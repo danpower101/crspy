@@ -14,6 +14,7 @@ import datetime
 import os
 import re
 import pandas as pd
+import math
 """
 To stop import issue with the config file when importing crspy in a wd without a config.ini file in it we need
 to read in the config file below and add `nld=nld['config']` into each function that requires the nld variables.
@@ -186,3 +187,12 @@ def flipall(listfiles):
 
 #listfiles = getlistoffiles(nld['defaultdir'] + "/data/crns_data/raw/")
 # flipall(listfiles)
+
+def checkdata(datain):
+    """
+    Will add a 0 value for missing data and a 1 value for present data
+    """
+    if math.isnan(datain):
+        return 0
+    else:
+        return 1
