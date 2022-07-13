@@ -25,6 +25,7 @@ import warnings
 
 # crspy funcs
 from crspy.neutron_correction_funcs import pv, es, ea
+from crspy.gen_funcs import theta_calc, theta_kohli
 
 # Brought in to stop warning around missing data
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -234,7 +235,7 @@ def rscaled(r, p, Hveg, y):
     return(r / Fp / Fveg)
 
 
-def n0_calib(meta, country, sitenum, defineaccuracy, nld=nld):
+def n0_calib(meta, country, sitenum, defineaccuracy, useeradata, calib_start_time="16:00:00", calib_end_time="23:00:00", theta_method="desilets", nld=nld):
     """n0_calib the full calibration process
 
     Parameters
@@ -247,6 +248,14 @@ def n0_calib(meta, country, sitenum, defineaccuracy, nld=nld):
         sitenum of the site "e.g.
     defineaccuracy : float
         accuracy that is desired usually 0.01
+    useeradata : bool
+        import from full process wrapper, if using era5 land data some routines are turned on
+    calib_start_time : str
+        start time of the calibration period in UTC time e.g."16:00:00" 
+    calib_end_time : str
+        end time of the calibration period in UTC time e.g."23:00:00" 
+    theta_method : str
+        choice of method to convert N/N0 to sm. Standard is "desilets" method, with option to choose "kohli" method
     nld : dictionary
         nld should be defined in the main script (from name_list import nld), this will be the name_list.py dictionary. 
         This will store variables such as the wd and other global vars
@@ -424,10 +433,18 @@ def n0_calib(meta, country, sitenum, defineaccuracy, nld=nld):
     lvl1['DATE'] = pd.to_datetime(
         lvl1['DT'], format='%Y/%m/%d')  # Use correct formatting
     lvl1['DATE'] = lvl1['DATE'].dt.date     # Remove the time portion
-    if lvl1['E_RH'].mean() == int(nld['noval']):
-        isrh = False                         #Check if external RH is available
+    
+    # if lvl1['E_RH'].mean() == int(nld['noval']):
+    #     isrh = False                         #Check if external RH is available
+    # else:
+    #     isrh = True
+    if useeradata == True:
+        isrh = False
+    
+    # THINK LOGIC
     else:
         isrh = True
+    
     lvl1[lvl1 == int(nld['noval'])] = np.nan
 
     # Creates dictionary of dfs for calibration days found
@@ -439,8 +456,8 @@ def n0_calib(meta, country, sitenum, defineaccuracy, nld=nld):
     avgP = dict()
     for i in range(len(dflvl1Days)):
         tmp = pd.DataFrame.from_dict(dflvl1Days[i])
-        tmp = tmp[(tmp['DT'] > str(unidate[i])+' 16:00:00') & (tmp['DT']
-                                                               <= str(unidate[i])+' 23:00:00')]  # COSMOS time of Calib
+        tmp = tmp[(tmp['DT'] > str(unidate[i])+' '+str(calib_start_time)) & (tmp['DT']
+                                                               <= str(unidate[i])+' '+str(calib_end_time))]  # COSMOS time of Calib
         check = float(np.nanmean(tmp['PRESS'], axis=0))
 
         if np.isnan(check):
@@ -453,8 +470,8 @@ def n0_calib(meta, country, sitenum, defineaccuracy, nld=nld):
     avgT = dict()
     for i in range(len(dflvl1Days)):
         tmp = pd.DataFrame.from_dict(dflvl1Days[i])
-        tmp = tmp[(tmp['DT'] > str(unidate[i])+' 16:00:00') & (tmp['DT']
-                                                               <= str(unidate[i])+' 23:00:00')]  # COSMOS time of Calib
+        tmp = tmp[(tmp['DT'] > str(unidate[i])+' '+str(calib_start_time)) & (tmp['DT']
+                                                               <= str(unidate[i])+' '+str(calib_end_time))]  # COSMOS time of Calib
         check = float(np.nanmean(tmp['TEMP'], axis=0))
         # Very few sites had no data at time of COSMOS calib - if thats the case use day average
         if np.isnan(check):
@@ -462,13 +479,30 @@ def n0_calib(meta, country, sitenum, defineaccuracy, nld=nld):
             avgT[i] = float(np.nanmean(tmp['TEMP'], axis=0))
         else:
             avgT[i] = check
+    
+    # Introduce flux AH possibility
+    try:
+        avgAH = dict()
+        for i in range(len(dflvl1Days)):
+            tmp = pd.DataFrame.from_dict(dflvl1Days[i])
+            tmp = tmp[(tmp['DT'] > str(unidate[i])+' '+str(calib_start_time)) & (tmp['DT']
+                                                               <= str(unidate[i])+' '+str(calib_end_time))]  # COSMOS time of Calib
+            check = float(np.nanmean(tmp['E_AH_FLUX'], axis=0))
+            # Very few sites had no data at time of COSMOS calib - if thats the case use day average
+            if np.isnan(check):
+                tmp = pd.DataFrame.from_dict(dflvl1Days[i])
+                avgAH[i] = float(np.nanmean(tmp['E_AH_FLUX'], axis=0))
+            else:
+                avgAH[i] = check
+    except:
+        pass
 
     if isrh:
         avgRH = dict()
         for i in range(len(dflvl1Days)):
             tmp = pd.DataFrame.from_dict(dflvl1Days[i])
-            tmp = tmp[(tmp['DT'] > str(unidate[i])+' 16:00:00') & (tmp['DT']
-                                                                <= str(unidate[i])+' 23:00:00')]  # COSMOS time of Calib
+            tmp = tmp[(tmp['DT'] > str(unidate[i])+' '+str(calib_start_time)) & (tmp['DT']
+                                                               <= str(unidate[i])+' '+str(calib_end_time))]  # COSMOS time of Calib
             check = float(np.nanmean(tmp['E_RH'], axis=0))
             # Very few sites had no data at time of COSMOS calib - if thats the case use day average
             if np.isnan(check):
@@ -481,8 +515,8 @@ def n0_calib(meta, country, sitenum, defineaccuracy, nld=nld):
         avgVP = dict()
         for i in range(len(dflvl1Days)):
             tmp = pd.DataFrame.from_dict(dflvl1Days[i])
-            tmp = tmp[(tmp['DT'] > str(unidate[i])+' 16:00:00') & (tmp['DT']
-                                                                <= str(unidate[i])+' 23:00:00')]  # COSMOS time of Calib
+            tmp = tmp[(tmp['DT'] > str(unidate[i])+' '+str(calib_start_time)) & (tmp['DT']
+                                                               <= str(unidate[i])+' '+str(calib_end_time))]  # COSMOS time of Calib
             check = float(np.nanmean(tmp['VP'], axis=0))
             # Very few sites had no data at time of COSMOS calib - if thats the case use day average
             if np.isnan(check):
@@ -491,6 +525,10 @@ def n0_calib(meta, country, sitenum, defineaccuracy, nld=nld):
             else:
                 avgVP[i] = check
     print("Done")
+
+    ##TODO: Introduce a check here to see if data is available
+
+
     """
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~~~~~~~~ THE BIG ITERATIVE LOOP - CALCULATE WEIGHTED THETA ~~~~~~~~~~~~~~~~~~~~
@@ -593,6 +631,13 @@ def n0_calib(meta, country, sitenum, defineaccuracy, nld=nld):
                 day1hum = pv(day1vp, day1temp)
                 # Multiply by 1000 to convert to g m-3 which is used by functions
                 day1hum = day1hum * 1000
+            
+            try:
+                if np.isnan(day1hum):
+                    day1hum = avgAH[i]
+                    print("Using flux AH")
+            except:
+                pass
 
             # Need to add value to each row for .loc application
             depthdf['day1hum'] = day1hum
@@ -702,8 +747,8 @@ def n0_calib(meta, country, sitenum, defineaccuracy, nld=nld):
     for i in range(len(NeutCount)):
         # Find the daily mean neutron count for each calibration day
         tmp = pd.DataFrame.from_dict(NeutCount[i])
-        tmp = tmp[(tmp['DT'] > str(unidate[i])+' 16:00:00') & (tmp['DT']
-                                                               <= str(unidate[i])+' 23:00:00')]  # COSMOS time of Calib
+        tmp = tmp[(tmp['DT'] > str(unidate[i])+' '+str(calib_start_time)) & (tmp['DT']
+                                                               <= str(unidate[i])+' '+str(calib_end_time))]  # COSMOS time of Calib
         check = float(np.nanmean(tmp['MOD_CORR']))
        # Need another catch to stop errors with missing data
         if np.isnan(check):
@@ -724,13 +769,26 @@ def n0_calib(meta, country, sitenum, defineaccuracy, nld=nld):
             sm = pd.DataFrame(columns=['sm'])
             reler = pd.DataFrame(columns=['RelErr'])
 
-            for j in range(len(N0)):
+            if theta_method == "desilets":
+                for j in range(len(N0)):
 
-                sm.loc[j] = ((float(nld["a0"]) / ((Nave / N0.loc[j]) -
-                                           float(nld["a1"]))) - float(nld["a2"]) - lw - soc) * bd
-                tmp = sm.iat[j, 0]
-                # Accuracy normalised to vwc
-                reler.loc[j] = abs((sm.iat[j, 0] - vwc)/vwc)
+                    sm.loc[j] = theta_calc(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, Nave, N0.loc[j], lw, soc)
+                    
+                    sm.loc[j] = ((float(nld["a0"]) / ((Nave / N0.loc[j]) -
+                                            float(nld["a1"]))) - float(nld["a2"]) - lw - soc) * bd
+                    tmp = sm.iat[j, 0]
+                    # Accuracy normalised to vwc
+                    # reler.loc[j] = abs((sm.iat[j, 0] - vwc)/vwc)
+                    # Accuracy not normalised to vwc
+                    reler.loc[j] = abs(sm.iat[j, 0] - vwc)
+            elif theta_method == "kohli":
+                for j in range(len(N0)):
+                    sm.loc[j] = theta_kohli(float(nld['a0']), float(nld['a1']), float(nld['a2']), bd, Nave, N0.loc[j], lw, soc)
+                    tmp = sm.iat[j, 0]
+                    # Accuracy normalised to vwc
+                    # reler.loc[j] = abs((sm.iat[j, 0] - vwc)/vwc)
+                    # Accuracy not normalised to vwc                    
+                    reler.loc[j] = abs(sm.iat[j, 0] - vwc)
 
             RelerrDict[i] = reler['RelErr']
 

@@ -61,7 +61,7 @@ def dropemptycols(colstocheck, df, nld=nld):
     return df
 
 
-def prepare_data(fileloc, intentype=None, nld=nld):
+def prepare_data(fileloc, useeradata, intentype=None, nld=nld):
     """prepare_data provided with the location of the raw data it will prepare the data.
 
     Steps include: 
@@ -75,6 +75,8 @@ def prepare_data(fileloc, intentype=None, nld=nld):
     ----------
     fileloc : str   
         string of the location of the file on the users computer
+    useeradata : boolean
+        input from full_process_wrapper on whether to use era5 land data or skip
     intentype : str, optional
         can be set to nearestGV if using the alternative method, by default None
     nld : dictionary
@@ -218,109 +220,108 @@ def prepare_data(fileloc, intentype=None, nld=nld):
     local data.
     """
 
-    #!!! TO DO add a check here to see if we need ERA5_Land data in the first place
-
-    # if (df['RAIN'].mean() != int(nld['noval'])) and (df[''])
 
 
-    # else:
-    
-    # Read in the time zone of the site
-    print("Collecting ERA-5 Land variables...")
-    try:
-        era5 = xr.open_dataset(
-            nld['defaultdir']+"/data/era5land/"+nld['era5_filename']+".nc")
-        print('Read in file')
+    if useeradata == True:
+        # Read in the time zone of the site
+        print("Collecting ERA-5 Land variables...")
         try:
-            era5site = era5.sel(site=sitecode)
-        except:
-            era5site = era5  # If user only has one site it breaks here - this stops that
+            era5 = xr.open_dataset(
+                nld['defaultdir']+"/data/era5land/"+nld['era5_filename']+".nc")
+            print('Read in file')
+            try:
+                era5site = era5.sel(site=sitecode)
+            except:
+                era5site = era5  # If user only has one site it breaks here - this stops that
 
-        era5time = pd.to_datetime(era5site.time.values)
+            era5time = pd.to_datetime(era5site.time.values)
 
-        # minus 273.15 to convert to celcius as era5 stores it as kelvin
-        temp_dict = dict(zip(era5time, era5site.temperature.values-273.15))
-        dptemp_dict = dict(
-            zip(era5time, era5site.dewpoint_temperature.values-273.15))
-        # Want to check on this
-        press_dict = dict(zip(era5time, era5site.pressure.values*0.01))
-        swe_dict = dict(zip(era5time, era5site.snow_water_equiv.values*1000))
-        # prcp is in meteres in ERA5 so convert to mm
-        prcp_dict = dict(zip(era5time, era5site.precipitation.values*1000))
-        # Introduced here to "correct" for the way ERA5_Land accumulates precipitation over 24 hours
-        tmp = pd.DataFrame()
-        tmp['DT'] = era5time
-        tmp['RAIN'] = tmp['DT'].map(prcp_dict)
-        tmp['DT'] = pd.to_datetime(tmp['DT'])
-        tmp['YEAR'] = tmp['DT'].dt.date
-        tmp['HOUR'] = tmp['DT'].dt.hour
-        tmp['RAINSHIFT'] = tmp['RAIN'].shift(1)
-        tmp['HOURLYRAIN'] = 0
-        tmp['TRUERAIN'] = tmp['RAIN'] - tmp['RAINSHIFT']
-        tmp.loc[tmp['HOUR'] == 1, ['TRUERAIN']] = tmp['RAIN']
+            # minus 273.15 to convert to celcius as era5 stores it as kelvin
+            temp_dict = dict(zip(era5time, era5site.temperature.values-273.15))
+            dptemp_dict = dict(
+                zip(era5time, era5site.dewpoint_temperature.values-273.15))
+            # Want to check on this
+            press_dict = dict(zip(era5time, era5site.pressure.values*0.01))
+            swe_dict = dict(zip(era5time, era5site.snow_water_equiv.values*1000))
+            # prcp is in meteres in ERA5 so convert to mm
+            prcp_dict = dict(zip(era5time, era5site.precipitation.values*1000))
+            # Introduced here to "correct" for the way ERA5_Land accumulates precipitation over 24 hours
+            tmp = pd.DataFrame()
+            tmp['DT'] = era5time
+            tmp['RAIN'] = tmp['DT'].map(prcp_dict)
+            tmp['DT'] = pd.to_datetime(tmp['DT'])
+            tmp['YEAR'] = tmp['DT'].dt.date
+            tmp['HOUR'] = tmp['DT'].dt.hour
+            tmp['RAINSHIFT'] = tmp['RAIN'].shift(1)
+            tmp['HOURLYRAIN'] = 0
+            tmp['TRUERAIN'] = tmp['RAIN'] - tmp['RAINSHIFT']
+            tmp.loc[tmp['HOUR'] == 1, ['TRUERAIN']] = tmp['RAIN']
 
-        prcp_dict = dict(zip(tmp['DT'], tmp['TRUERAIN']))
-        # Add the ERA5_Land data
-        if df.E_TEM.mean() == int(nld['noval']):
+            prcp_dict = dict(zip(tmp['DT'], tmp['TRUERAIN']))
+            # Add the ERA5_Land data
             df['TEMP'] = df['DT'].map(temp_dict)
             meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY']
                                                     == country), 'TEM_DATA_SOURCE'] = 'ERA5_Land'
-        else:
-            df['TEMP'] = df['E_TEM']
-            meta.loc[(meta['SITENUM'] == sitenum) & (
-                meta['COUNTRY'] == country), 'TEM_DATA_SOURCE'] = 'Local'
 
-        if df.RAIN.mean() == int(nld['noval']):
             df['RAIN'] = df['DT'].map(prcp_dict)
             meta.loc[(meta['SITENUM'] == sitenum) & (meta['COUNTRY']
                                                     == country), 'RAIN_DATA_SOURCE'] = 'ERA5_Land'
-        else:
-            meta.loc[(meta['SITENUM'] == sitenum) & (
-                meta['COUNTRY'] == country), 'RAIN_DATA_SOURCE'] = 'Local'
 
-        if df.E_RH.mean() == int(nld['noval']):
             rh = False
             meta.loc[(meta['SITENUM'] == sitenum) & (
                 meta['COUNTRY'] == country), 'RH_DATA_SOURCE'] = 'None'
-        else:
-            meta.loc[(meta['SITENUM'] == sitenum) & (
-                meta['COUNTRY'] == country), 'RH_DATA_SOURCE'] = 'Local'
-            rh = True
-        df['DEWPOINT_TEMP'] = df['DT'].map(dptemp_dict)
-        df['SWE'] = df['DT'].map(swe_dict)
-        df['ERA5L_PRESS'] = df['DT'].map(press_dict)
 
-        # PRESS2 is more accurate pressure gauge - use if available and if not fill in with PRESS1
-        press_series = df['PRESS2']
-        df['PRESS'] = df['PRESS2']
-        
-        df.loc[df['PRESS'] == int(nld['noval']), 'PRESS'] = df['PRESS1']
-        df = df.replace(int(nld['noval']), np.nan)
+            df['DEWPOINT_TEMP'] = df['DT'].map(dptemp_dict)
+            df['SWE'] = df['DT'].map(swe_dict)
+            df['ERA5L_PRESS'] = df['DT'].map(press_dict)
 
-        if rh == False:
-            df['VP'] = df.apply(lambda row: dew2vap(
-                row['DEWPOINT_TEMP']), axis=1)  # VP is in kPA
-            df['VP'] = df['VP']*1000  # Convert to Pascals
-        else:
-            # Output is in hectopascals
-            df['es'] = df.apply(lambda row: es(row['TEMP']), axis=1)
+            # PRESS2 is more accurate pressure gauge - use if available and if not fill in with PRESS1
+            press_series = df['PRESS2']
+            df['PRESS'] = df['PRESS2']
+            
+            df.loc[df['PRESS'] == int(nld['noval']), 'PRESS'] = df['PRESS1']
+            df = df.replace(int(nld['noval']), np.nan)
+
+            if rh == False:
+                df['VP'] = df.apply(lambda row: dew2vap(
+                    row['DEWPOINT_TEMP']), axis=1)  # VP is in kPA
+                df['VP'] = df['VP']*1000  # Convert to Pascals
+            else:
+                # Output is in hectopascals
+                df['es'] = df.apply(lambda row: es(row['TEMP']), axis=1)
+                df['es'] = df['es']*100  # Convert to Pascals
+                df['VP'] = df.apply(lambda row: ea(row['es'], row['E_RH']), axis=1)
+
+            print("Done")
+        except:
+            print("An error occured in ERA5-Land data writing. Attempting to use local data.")
+            # Introduced this bit to allow using sites that don't need ERA5_Land
+            df['PRESS'] = df['PRESS2']
+            df.loc[df['PRESS'] == int(nld['noval']), 'PRESS'] = df['PRESS1']  # !!!added
+            df = df.replace(int(nld['noval']), np.nan)
+
+            df['TEMP'] = df['E_TEM']
+
+            df['es'] = df.apply(lambda row: es(row['TEMP']),
+                                axis=1)  # Output is in hectopascals
             df['es'] = df['es']*100  # Convert to Pascals
             df['VP'] = df.apply(lambda row: ea(row['es'], row['E_RH']), axis=1)
+            print("Cannot load era5_land data. Please download data as it is needed.")
+    
+    elif useeradata == False:
+            df['PRESS'] = df['PRESS2']
+            df.loc[df['PRESS'] == int(nld['noval']), 'PRESS'] = df['PRESS1']  # !!!added
+            df = df.replace(int(nld['noval']), np.nan)
 
-        print("Done")
-    except:
-        # Introduced this bit to allow using sites that don't need ERA5_Land
-        df['PRESS'] = df['PRESS2']
-        df.loc[df['PRESS'] == int(nld['noval']), 'PRESS'] = df['PRESS1']  # !!!added
-        df = df.replace(int(nld['noval']), np.nan)
+            df['TEMP'] = df['E_TEM']
 
-        df['TEMP'] = df['E_TEM']
+            df['es'] = df.apply(lambda row: es(row['TEMP']),
+                                axis=1)  # Output is in hectopascals
+            df['es'] = df['es']*100  # Convert to Pascals
+            df['VP'] = df.apply(lambda row: ea(row['es'], row['E_RH']), axis=1)
+            df['DEWPOINT_TEMP'] = np.nan
+            df['SWE'] = np.nan
 
-        df['es'] = df.apply(lambda row: es(row['TEMP']),
-                            axis=1)  # Output is in hectopascals
-        df['es'] = df['es']*100  # Convert to Pascals
-        df['VP'] = df.apply(lambda row: ea(row['es'], row['E_RH']), axis=1)
-        print("Cannot load era5_land data. Please download data as it is needed.")
 
     ###############################################################################
     #                         Jungfraujoch data                                   #
@@ -351,7 +352,7 @@ def prepare_data(fileloc, intentype=None, nld=nld):
             print("Done")
         except:
             print("NMDB down")
-        ###############################################################################
+    ###############################################################################
     #                            The Final Table                                  #
     #                                                                             #
     # Add function that checks to see if column is all -999 - if so drop column   #
