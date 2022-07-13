@@ -16,16 +16,18 @@ from crspy.qa import flag_and_remove
 from crspy.qa import QA_plotting
 from crspy.theta import thetaprocess
 from crspy.gen_funcs import getlistoffiles
+
 """
 To stop import issue with the config file when importing crspy in a wd without a config.ini file in it we need
 to read in the config file below and add `nld=nld['config']` into each function that requires the nld variables.
 """
+
 from configparser import RawConfigParser
 nld = RawConfigParser()
 nld.read('config.ini')
 
 
-def process_raw_data(filepath, calibrate=True, calib_start_time=None, calib_end_time=None, intentype=None, useera5=True, theta_method="desilets", agg24=False, nld=nld):
+def process_raw_data(filepath, calibrate=True, calib_start_time=None, calib_end_time=None, intentype=None, agg24=True, useera5=False, use_ah_data=False, theta_method="desilets", nld=nld):
     """process_raw_data is a function that wraps all the necessary functions to process data. The user can select
     whether to complete n0 calibration (i.e. this may not be required if already done previously). It also gives the option to decide which
     intensity correction method to apply as there are two currently used. If a standard is agreed upon this will adjusted here.
@@ -82,11 +84,11 @@ def process_raw_data(filepath, calibrate=True, calib_start_time=None, calib_end_
         df, country, sitenum, meta, nmdbstation = prepare_data(
             filepath, useeradata=useera5, intentype="nearestGV")
         print("Processing " + str(country)+"_SITE_"+str(sitenum))
-        df, meta = neutcoeffs(df, country, sitenum, nmdbstation=nmdbstation)
+        df, meta = neutcoeffs(df, country, sitenum, use_ah_data=use_ah_data, nmdbstation=nmdbstation)
     else:
         df, country, sitenum, meta = prepare_data(filepath, useeradata=useera5)
         print("Processing " + str(country)+"_SITE_"+str(sitenum))
-        df, meta = neutcoeffs(df, country, sitenum)
+        df, meta = neutcoeffs(df, country, sitenum, use_ah_data=use_ah_data)
 
     if calibrate is True:
         if calib_start_time and calib_end_time:

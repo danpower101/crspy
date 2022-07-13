@@ -18,7 +18,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='crspy',  # Required
-    version='1.2.2',  # Required
+    version='1.3',  # Required
     description='Toolbox for calibration and correction of Cosmic Ray Neutron Sensor data using globally available data sources',  # Optional
     long_description=long_description,  # Optional
     long_description_content_type='text/markdown',  # Optional (see note above)
@@ -28,13 +28,13 @@ setup(
     packages=find_packages(exclude=['example', 'data', 'docker']),  # Required
    # python_requires='==3.8',
     install_requires=[
-        "numpy==1.21.2",
+        "numpy==1.22.0",
         "pandas==1.3.2",
         "matplotlib==3.4.3",
         "seaborn==0.11.2",
         "cdsapi==0.5.1",
         "xarray==0.19.0",
-        "scipy==1.7.1",
+        "scipy==1.7",
         "netCDF4==1.5.7",
         "beautifulsoup4==4.9.3",
         "ipykernel",

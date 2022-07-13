@@ -49,7 +49,7 @@ nld = RawConfigParser()
 nld.read('config.ini')
 
 
-def neutcoeffs(df, country, sitenum, nmdbstation=None, nld=nld):
+def neutcoeffs(df, country, sitenum, use_ah_data, nmdbstation=None, nld=nld):
     """neutcoeffs provides the factors to multiply the neutron count by to account for external impacts
 
     Parameters
@@ -101,9 +101,13 @@ def neutcoeffs(df, country, sitenum, nmdbstation=None, nld=nld):
     df.loc[df['pv'] == math.nan, 'pv_derived_qc'] = 1
     
     #Try to fill values with flux if missing
-    try:
-        df.pv.fillna(df.E_AH_FLUX,inplace = True)
-    except:
+    if use_ah_data == True:
+        try:
+            df.pv.fillna(df.E_AH,inplace = True)
+        except:
+            print('No E_AH data found when crspy is asked to use it. Please check your data.')
+            pass
+    else:
         pass
 
     df["fawv"] = df.apply(lambda row: humfact(row['pv'], float(nld['pv0'])), axis=1)
