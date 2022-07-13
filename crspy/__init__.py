@@ -5,7 +5,7 @@ Created on Mon Apr 27 10:22:50 2020
 @author: D. Power
 """
 
-__version__ = "1.2.2"
+__version__ = "1.3.0"
 from .era5_land import *
 from .gen_funcs import *
 from .initial_setup import *
