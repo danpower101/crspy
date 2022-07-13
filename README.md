@@ -21,9 +21,9 @@ A broad description of the tool and why it was written.
 
 Begin here for a description of how to download and install crspy, as well as how to prepare your working directory.
 
-[**Example Workflow**](https://github.com/danpower101/crspy/wiki/Example-Workflow)
+[**Example Workflow**](https://github.com/danpower101/crspy_example)
 
-The example workflow will walk through how to run this package using the provided examples. The links below provide specific guidance on each step.
+The example workflow repository will walk through how to run this package using the provided examples. The links below provide specific guidance on each step.
 
 ### **Preliminary Steps**
 
