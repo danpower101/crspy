@@ -34,7 +34,7 @@ setup(
         "seaborn==0.11.2",
         "cdsapi==0.5.1",
         "xarray==0.19.0",
-        "scipy==1.7",
+        "scipy==1.10.0",
         "netCDF4==1.5.7",
         "beautifulsoup4==4.9.3",
         "ipykernel",
